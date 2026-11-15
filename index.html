@@ -122,7 +122,11 @@ function closeModal(){ document.getElementById('modalBg').classList.remove('open
 
 /* СОСТОЯНИЕ */
 let DB = { users:{}, events:{}, threads:{}, polls:{}, venues:{} };
-let state = { tab:'home', threadId:null, eventId:null, eventFromTab:'calendar', messages:{}, unsub:[], birthdayChecked:false };
+let state = { 
+  tab:'home', threadId:null, eventId:null, eventFromTab:'calendar', messages:{}, unsub:[], birthdayChecked:false,
+  gallerySelectMode: false, 
+  gallerySelected: []       
+};
 let currentUser = null, currentProfile = null;
 function me(){ return currentProfile; }
 function hasRole(){ const arr = [].slice.call(arguments); return !!currentProfile && arr.indexOf(currentProfile.role) >= 0; }
@@ -329,7 +333,6 @@ function renderEventCard(e){
 async function setRsvp(eventId, status){
   const e = DB.events[eventId]; if (!e) return;
   
-  // Защита от изменения статуса, если тренер уже составил состав
   if (e.lineup && e.lineup.positions && Object.keys(e.lineup.positions).length > 0) {
     if (!canManageEvents()) {
       toast('Тренер уже составил состав. Ваш статус зафиксирован.');
@@ -472,7 +475,10 @@ function renderEventDetail(){
   const declined = Object.entries(rsvp).filter(([_,v]) => v === 'declined').map(([uid]) => DB.users[uid]).filter(Boolean);
   const myStatus = rsvp[currentUser.uid];
   
-  const hasLineup = e.lineup && e.lineup.positions && Object.keys(e.lineup.positions).length > 0;
+  const hasLineup = e.lineup && (
+    (e.lineup.positions && Object.keys(e.lineup.positions).length > 0) || 
+    (e.lineup.jerseys && Object.keys(e.lineup.jerseys).length > 0)
+  );
   const myJersey = (e.lineup && e.lineup.jerseys && e.lineup.jerseys[currentUser.uid]) || '';
 
   const isLocked = hasLineup && !canManageEvents();
@@ -483,8 +489,14 @@ function renderEventDetail(){
       '<a href="https://yandex.ru/maps/?text=' + encodeURIComponent(CITY + ', ' + e.venue) + '" target="_blank" class="btn btn-secondary" style="padding:8px 12px;font-size:13px;text-decoration:none;display:inline-flex;gap:6px">' +
         '📍 ' + esc(e.venue) + ' (Маршрут)' +
       '</a>' +
-    '</div>' +
-    '<div class="small muted" style="margin-top:8px">Мест: ' + going.length + ' / ' + (e.limitPlayers||22) + (waitlist.length ? ' · резерв: ' + waitlist.length : '') + '</div>';
+    '</div>';
+    
+  if (isGame && e.globalJersey) {
+    const gText = e.globalJersey === 'home' ? '🏠 Домашняя' : '✈️ Гостевая';
+    html += '<div class="small" style="margin-top:8px; font-weight:600; color:var(--pt-blue);">Форма команды: ' + gText + '</div>';
+  }
+
+  html += '<div class="small muted" style="margin-top:8px">Мест: ' + going.length + ' / ' + (e.limitPlayers||22) + (waitlist.length ? ' · резерв: ' + waitlist.length : '') + '</div>';
     
   if (isLocked) {
     html += '<div style="margin-top:12px; background:var(--fill); padding:10px; border-radius:12px; text-align:center; font-size:14px; color:var(--text-2);">Состав утвержден тренером. Изменения недоступны.</div>';
@@ -496,24 +508,18 @@ function renderEventDetail(){
     '</div>';
   }
 
-  if ((myStatus === 'going' || myStatus === 'waitlist') && !isLocked) {
+  if (!isGame && (myStatus === 'going' || myStatus === 'waitlist') && !isLocked) {
     html += '<div style="margin-top:12px; padding:12px; background:var(--fill); border-radius:12px; border:1px solid var(--border);">' +
       '<div style="font-size:14px; font-weight:600; margin-bottom:8px; text-align:center;">Цвет вашей майки:</div>' +
-      '<div class="row" style="gap:8px;">';
-      
-    if (isGame) {
-      html += '<button class="btn ' + (myJersey === 'home' ? 'btn-primary' : 'btn-secondary') + '" style="flex:1; padding:10px;" onclick="setJerseyColor(\''+e.id+'\', \'home\')">🏠 Домашняя</button>' +
-              '<button class="btn ' + (myJersey === 'guest' ? 'btn-primary' : 'btn-secondary') + '" style="flex:1; padding:10px;" onclick="setJerseyColor(\''+e.id+'\', \'guest\')">✈️ Гостевая</button>';
-    } else {
-      html += '<button class="btn ' + (myJersey === 'black' ? 'btn-primary' : 'btn-secondary') + '" style="flex:1; padding:10px;" onclick="setJerseyColor(\''+e.id+'\', \'black\')">⚫ Черная</button>' +
-              '<button class="btn ' + (myJersey === 'white' ? 'btn-primary' : 'btn-secondary') + '" style="flex:1; padding:10px; background:' + (myJersey === 'white' ? 'var(--text)' : 'var(--card)') + '; color:' + (myJersey === 'white' ? '#fff' : 'var(--text)') + ';" onclick="setJerseyColor(\''+e.id+'\', \'white\')">⚪ Белая</button>';
-    }
-    html += '</div></div>';
+      '<div class="row" style="gap:8px;">' +
+        '<button class="btn ' + (myJersey === 'black' ? 'btn-primary' : 'btn-secondary') + '" style="flex:1; padding:10px;" onclick="setJerseyColor(\''+e.id+'\', \'black\')">⚫ Черная</button>' +
+        '<button class="btn ' + (myJersey === 'white' ? 'btn-primary' : 'btn-secondary') + '" style="flex:1; padding:10px; background:' + (myJersey === 'white' ? 'var(--text)' : 'var(--card)') + '; color:' + (myJersey === 'white' ? '#fff' : 'var(--text)') + ';" onclick="setJerseyColor(\''+e.id+'\', \'white\')">⚪ Белая</button>' +
+      '</div></div>';
   }
     
   if (canManageEvents()) {
     html += '<div class="row" style="gap:8px;margin-top:12px">' +
-      '<button class="btn btn-secondary" style="flex:1;font-size:13px;padding:10px" onclick="openLineupManager(\''+e.id+'\')">📋 Состав и звенья</button>' +
+      '<button class="btn btn-secondary" style="flex:1;font-size:13px;padding:10px" onclick="openLineupManager(\''+e.id+'\')">📋 ' + (isGame ? 'Состав и звенья' : 'Список и цвета') + '</button>' +
       '</div>' +
       '<div class="row" style="gap:8px;margin-top:8px">' +
       '<button class="btn btn-secondary" style="flex:1;font-size:13px;padding:8px" onclick="toggleCancelEvent(\''+e.id+'\')">' + (e.cancelled ? '↺ Вернуть' : '✕ Отменить') + '</button>' +
@@ -523,56 +529,78 @@ function renderEventDetail(){
   html += '<div style="margin-top:8px"><button class="btn btn-secondary" style="width:100%;font-size:14px;padding:10px" onclick="openEventChat(\''+e.id+'\')">💬 Чат события</button></div></div>';
   
   if (hasLineup) {
-    const jerseys = e.lineup.jerseys || {};
-    const positions = e.lineup.positions;
-    
-    let groups = { goalie: [], defense: [], forward1: [], forward2: [], forward3: [], forward4: [], sub: [] };
-    
-    Object.keys(positions).forEach(uid => {
-      const u = DB.users[uid];
-      if (!u) return;
-      const pos = positions[uid];
+    if (isGame) {
+      const positions = e.lineup.positions || {};
+      let groups = { goalie: [], defense: [], forward1: [], forward2: [], forward3: [], forward4: [], sub: [] };
       
-      if (pos.role === 'goalie') groups.goalie.push(u);
-      else if (pos.role === 'defense') groups.defense.push(u);
-      else if (pos.role === 'sub') groups.sub.push(u);
-      else if (pos.role === 'forward') {
-        const lineKey = 'forward' + (pos.line || '1');
-        if (groups[lineKey]) groups[lineKey].push(u); else groups.forward1.push(u);
-      }
-    });
-
-    html += '<h4 style="margin:16px 0 8px;color:var(--pt-blue)">📋 Утвержденный состав</h4>';
-    html += '<div class="card" style="padding:12px; background:var(--fill);">';
-    
-    const renderGroup = (title, list, icon) => {
-      if (!list.length) return;
-      html += `<div style="margin-bottom:12px;"><strong style="font-size:14px; color:var(--text-2);">${icon} ${title}</strong><br>`;
-      list.forEach(u => {
-        const jColor = jerseys[u.id];
-        let jIcon = '';
-        if (jColor === 'black') jIcon = '⚫ ';
-        if (jColor === 'white') jIcon = '⚪ ';
-        if (jColor === 'home') jIcon = '🏠 ';
-        if (jColor === 'guest') jIcon = '✈️ ';
-        
-        html += `<div style="font-size:14px; margin-top:4px;">${jIcon}${esc(u.name)}</div>`;
+      Object.keys(positions).forEach(uid => {
+        const u = DB.users[uid];
+        if (!u) return;
+        const pos = positions[uid];
+        if (pos.role === 'goalie') groups.goalie.push(u);
+        else if (pos.role === 'defense') groups.defense.push(u);
+        else if (pos.role === 'sub') groups.sub.push(u);
+        else if (pos.role === 'forward') {
+          const lineKey = 'forward' + (pos.line || '1');
+          if (groups[lineKey]) groups[lineKey].push(u); else groups.forward1.push(u);
+        }
       });
-      html += '</div>';
-    };
 
-    renderGroup('Вратари', groups.goalie, '🥅');
-    renderGroup('Защитники', groups.defense, '🛡');
-    renderGroup('1-е звено', groups.forward1, '⚔️');
-    renderGroup('2-е звено', groups.forward2, '⚔️');
-    renderGroup('3-е звено', groups.forward3, '⚔️');
-    renderGroup('4-е звено', groups.forward4, '⚔️');
-    renderGroup('Запасные', groups.sub, '🪑');
-    
-    if (e.lineup.lines) {
-      html += '<div style="margin-top:12px; border-top:1px dashed var(--border); padding-top:12px;"><strong style="font-size:14px; color:var(--text-2);">📝 Заметки тренера:</strong><br><span style="font-size:14px; white-space:pre-wrap;">' + esc(e.lineup.lines) + '</span></div>';
+      html += '<h4 style="margin:16px 0 8px;color:var(--pt-blue)">📋 Утвержденный состав</h4>';
+      html += '<div class="card" style="padding:12px; background:var(--fill);">';
+      
+      let totalInLineup = 0;
+      const renderGroup = (title, list, icon) => {
+        if (!list.length) return;
+        totalInLineup += list.length;
+        html += `<div style="margin-bottom:12px;"><strong style="font-size:14px; color:var(--text-2);">${icon} ${title}</strong><br>`;
+        list.forEach(u => { html += `<div style="font-size:14px; margin-top:4px;">${esc(u.name)}</div>`; });
+        html += '</div>';
+      };
+
+      renderGroup('Вратари', groups.goalie, '🥅');
+      renderGroup('Защитники', groups.defense, '🛡');
+      renderGroup('1-е звено', groups.forward1, '⚔️');
+      renderGroup('2-е звено', groups.forward2, '⚔️');
+      renderGroup('3-е звено', groups.forward3, '⚔️');
+      renderGroup('4-е звено', groups.forward4, '⚔️');
+      renderGroup('Запасные', groups.sub, '🪑');
+      
+      if (totalInLineup === 0) html += '<div class="small muted" style="text-align:center;">Никто еще не добавлен в состав.</div>';
+      if (e.lineup.lines) html += '<div style="margin-top:12px; border-top:1px dashed var(--border); padding-top:12px;"><strong style="font-size:14px; color:var(--text-2);">📝 Заметки:</strong><br><span style="font-size:14px; white-space:pre-wrap;">' + esc(e.lineup.lines) + '</span></div>';
+      html += '</div>';
+    } else {
+      const jerseys = e.lineup.jerseys || {};
+      let blacks = [];
+      let whites = [];
+      
+      Object.keys(jerseys).forEach(uid => {
+         if (rsvp[uid] === 'going') {
+           const u = DB.users[uid];
+           if (!u) return;
+           if (jerseys[uid] === 'black') blacks.push(u);
+           if (jerseys[uid] === 'white') whites.push(u);
+         }
+      });
+      
+      html += '<h4 style="margin:16px 0 8px;color:var(--pt-blue)">📋 Список на тренировку</h4>';
+      html += '<div class="card" style="padding:12px; background:var(--fill);">';
+      
+      if (blacks.length) {
+        html += '<div style="margin-bottom:12px;"><strong style="font-size:14px; color:var(--text-2);">⚫ Черные</strong><br>';
+        blacks.forEach(u => { html += `<div style="font-size:14px; margin-top:4px;">${esc(u.name)}</div>`; });
+        html += '</div>';
+      }
+      if (whites.length) {
+        html += '<div style="margin-bottom:12px;"><strong style="font-size:14px; color:var(--text-2);">⚪ Белые</strong><br>';
+        whites.forEach(u => { html += `<div style="font-size:14px; margin-top:4px;">${esc(u.name)}</div>`; });
+        html += '</div>';
+      }
+      if (!blacks.length && !whites.length) {
+         html += '<div class="small muted" style="text-align:center;">Пока никто не распределен по цветам.</div>';
+      }
+      html += '</div>';
     }
-    html += '</div>';
   }
 
   const list = (title,color,arr) => { if (!arr.length) return ''; let s = '<h4 style="margin:14px 0 8px;color:'+color+'">' + title + ' (' + arr.length + ')</h4>'; arr.forEach(u => { s += '<div class="card row" style="margin-bottom:8px;padding:10px">' + renderAvatar(u, 38) + '<div style="font-weight:600">' + esc(u.name) + '</div></div>'; }); return s; };
@@ -593,8 +621,22 @@ function openLineupManager(eventId) {
   const jerseys = lineup.jerseys || {}; 
   const positions = lineup.positions || {};
   const linesText = lineup.lines || '';
+  const globalJersey = e.globalJersey || 'home';
 
-  let html = '<h3 style="margin-bottom:12px;font-size:16px">Формирование состава</h3>';
+  let html = '';
+  
+  if (isGame) {
+    html += '<div style="margin-bottom:16px; padding:12px; background:var(--card); border:1px solid var(--border); border-radius:12px;">' +
+      '<div style="font-weight:700; margin-bottom:8px; font-size:14px;">Форма команды на эту игру:</div>' +
+      '<select class="input" id="globalJerseySelect" style="padding:8px; font-size:14px;">' +
+        '<option value="home" ' + (globalJersey==='home'?'selected':'') + '>🏠 Домашняя</option>' +
+        '<option value="guest" ' + (globalJersey==='guest'?'selected':'') + '>✈️ Гостевая</option>' +
+      '</select>' +
+    '</div>';
+    html += '<h3 style="margin-bottom:12px;font-size:16px">Состав на игру</h3>';
+  } else {
+    html += '<h3 style="margin-bottom:12px;font-size:16px">Список на тренировку</h3>';
+  }
   
   allUsers.forEach(u => {
     const currentPos = positions[u.id] || { role: '', line: '1' };
@@ -613,8 +655,10 @@ function openLineupManager(eventId) {
         statusText +
       '</div>' +
       
-      '<div class="row" style="gap:6px;">' +
-        '<select class="input" id="pos_role_' + u.id + '" style="flex:1; padding:6px; font-size:12px;">' +
+      '<div class="row" style="gap:6px;">';
+      
+    if (isGame) {
+      html += '<select class="input" id="pos_role_' + u.id + '" style="flex:1; padding:6px; font-size:12px;">' +
           '<option value="" ' + (currentPos.role===''?'selected':'') + '>❌ Убрать в резерв</option>' +
           '<option value="goalie" ' + (currentPos.role==='goalie'?'selected':'') + '>🥅 Вратарь</option>' +
           '<option value="defense" ' + (currentPos.role==='defense'?'selected':'') + '>🛡 Защитник</option>' +
@@ -626,23 +670,22 @@ function openLineupManager(eventId) {
           '<option value="2" ' + (currentPos.line==='2'?'selected':'') + '>2 зв.</option>' +
           '<option value="3" ' + (currentPos.line==='3'?'selected':'') + '>3 зв.</option>' +
           '<option value="4" ' + (currentPos.line==='4'?'selected':'') + '>4 зв.</option>' +
-        '</select>' +
-        '<select class="input" id="jersey_' + u.id + '" style="width:90px; padding:6px; font-size:12px;">' +
-          '<option value="">Майка: -</option>';
-    
-    if (isGame) {
-      html += '<option value="home" ' + (currentJ==='home'?'selected':'') + '>🏠 Дом</option>' +
-              '<option value="guest" ' + (currentJ==='guest'?'selected':'') + '>✈️ Гость</option>';
+        '</select>';
     } else {
-      html += '<option value="black" ' + (currentJ==='black'?'selected':'') + '>⚫ Черная</option>' +
-              '<option value="white" ' + (currentJ==='white'?'selected':'') + '>⚪ Белая</option>';
+      html += '<select class="input" id="jersey_' + u.id + '" style="flex:1; padding:6px; font-size:13px;">' +
+          '<option value="">❌ Убрать в резерв</option>' +
+          '<option value="black" ' + (currentJ==='black'?'selected':'') + '>⚫ Черная</option>' +
+          '<option value="white" ' + (currentJ==='white'?'selected':'') + '>⚪ Белая</option>' +
+        '</select>';
     }
     
-    html += '</select></div></div>';
+    html += '</div></div>';
   });
 
-  html += '<h3 style="margin:16px 0 12px;font-size:16px">Заметки (Звенья)</h3>';
-  html += '<textarea class="input" id="lineupLines" style="height:80px; resize:none; font-size:14px;" placeholder="Любые заметки по тактике...">' + esc(linesText) + '</textarea>';
+  if (isGame) {
+    html += '<h3 style="margin:16px 0 12px;font-size:16px">Заметки (Звенья)</h3>';
+    html += '<textarea class="input" id="lineupLines" style="height:80px; resize:none; font-size:14px;" placeholder="Любые заметки по тактике...">' + esc(linesText) + '</textarea>';
+  }
 
   showModal(html, '<div class="row" style="justify-content:space-between"><h3 style="margin:0;font-size:18px">Планшет тренера</h3><button class="btn btn-primary" id="saveLineupBtn" style="padding:10px 18px;font-size:14px">Утвердить</button></div>');
 
@@ -650,29 +693,41 @@ function openLineupManager(eventId) {
     const newJerseys = {};
     const newPositions = {};
     const newRsvp = { ...e.rsvp };
+    let newGlobalJersey = e.globalJersey || 'home';
     
+    if (isGame) {
+      newGlobalJersey = document.getElementById('globalJerseySelect').value;
+    }
+
     allUsers.forEach(u => {
-      const role = document.getElementById('pos_role_' + u.id).value;
-      const line = document.getElementById('pos_line_' + u.id).value;
-      const jersey = document.getElementById('jersey_' + u.id).value;
-      
-      if (role) {
-        newPositions[u.id] = { role: role, line: line };
+      if (isGame) {
+        const role = document.getElementById('pos_role_' + u.id).value;
+        const line = document.getElementById('pos_line_' + u.id).value;
+        if (role) {
+          newPositions[u.id] = { role: role, line: line };
+          newRsvp[u.id] = 'going'; 
+        } else {
+          newRsvp[u.id] = 'waitlist'; 
+        }
       } else {
-        // Если роль пустая (убрали в резерв), принудительно меняем RSVP на резерв
-        newRsvp[u.id] = 'waitlist';
+        const jersey = document.getElementById('jersey_' + u.id).value;
+        if (jersey) {
+          newJerseys[u.id] = jersey;
+          newRsvp[u.id] = 'going';
+        } else {
+          newRsvp[u.id] = 'waitlist';
+        }
       }
-      
-      if (jersey) newJerseys[u.id] = jersey;
     });
 
-    const newLines = document.getElementById('lineupLines').value.trim();
+    const newLines = isGame ? document.getElementById('lineupLines').value.trim() : '';
 
     await updateDoc(doc(db, 'events', eventId), {
       lineup: { jerseys: newJerseys, lines: newLines, positions: newPositions },
-      rsvp: newRsvp
+      rsvp: newRsvp,
+      globalJersey: newGlobalJersey
     });
-    closeModal(); toast('Состав утвержден!');
+    closeModal(); toast('Сохранено!');
     renderEventDetail();
   };
 }
@@ -692,27 +747,25 @@ function renderChatListIfActive(){
   
   let html = '';
   
-  const generalThread = DB.threads['general'];
-  if (generalThread) {
-    html += '<div class="card row" style="cursor:pointer;margin-bottom:10px" onclick="openThread(\'general\')">' +
-      '<div class="avatar" style="width:46px;height:46px;background:var(--grad-pt);font-size:18px">💬</div>' +
-      '<div style="flex:1;min-width:0"><div style="font-weight:600">Общий чат</div>' +
-      '<div class="small muted">Главный чат команды</div></div></div>';
-  }
+  html += '<div class="card row" style="cursor:pointer;margin-bottom:10px; border:2px solid var(--pt-blue-light)" onclick="openThread(\'general\')">' +
+    '<div class="avatar" style="width:46px;height:46px;background:var(--grad-pt);font-size:18px">💬</div>' +
+    '<div style="flex:1;min-width:0"><div style="font-weight:600">Общий чат</div>' +
+    '<div class="small muted">Фото, файлы, общение</div></div></div>';
 
-  const nextEvent = getNextEvent();
-  if (nextEvent) {
-    const eventThreadId = 'event_' + nextEvent.id;
-    const eventThread = DB.threads[eventThreadId];
-    if (eventThread) {
-      html += '<div class="card row" style="cursor:pointer;margin-bottom:10px;border:2px solid var(--pt-blue-light)" onclick="openThread(\''+eventThreadId+'\')">' +
-        '<div class="avatar" style="width:46px;height:46px;background:var(--grad-pt);font-size:18px">🏒</div>' +
-        '<div style="flex:1;min-width:0"><div style="font-weight:600">' + esc(eventThread.name) + '</div>' +
-        '<div class="small muted" style="color:var(--pt-blue)">Чат ближайшего события</div></div></div>';
-    }
-  }
+  const now = Date.now();
+  const activeEvents = Object.values(DB.events).filter(e => !e.cancelled && e.startsAt > (now - 86400000)); 
+  
+  activeEvents.sort((a,b) => b.startsAt - a.startsAt).forEach(e => {
+    const threadId = 'event_' + e.id;
+    if (!DB.threads[threadId]) return;
+    
+    html += '<div class="card row" style="cursor:pointer;margin-bottom:10px; border:1px solid var(--border)" onclick="openThread(\''+threadId+'\')">' +
+      '<div class="avatar" style="width:46px;height:46px;background:var(--fill);font-size:18px">🏒</div>' +
+      '<div style="flex:1;min-width:0"><div style="font-weight:600">' + esc(e.title) + '</div>' +
+      '<div class="small muted">Чат события</div></div></div>';
+  });
 
-  document.getElementById('view').innerHTML = html || '<div class="empty-state"><h3>Нет чатов</h3></div>';
+  document.getElementById('view').innerHTML = html;
 }
 
 function getNextEvent() {
@@ -734,12 +787,25 @@ function openThread(threadId){
   render();
 }
 function closeThread(){ if (state.unsub._msgs) { state.unsub._msgs(); state.unsub._msgs = null; } state.threadId = null; render(); }
+
 function renderThread(threadId){
   const thread = DB.threads[threadId]; if (!thread) { closeThread(); return; }
-  document.getElementById('hdr').innerHTML = '<div class="row" style="justify-content:space-between"><button class="btn btn-ghost" style="padding:8px 0" onclick="closeThread()">← Назад</button><div style="font-weight:700;font-size:18px">' + esc(thread.name) + '</div><div style="width:40px"></div></div>';
+  
+  const isGeneral = (threadId === 'general');
+  
+  document.getElementById('hdr').innerHTML = 
+    '<div class="row" style="justify-content:space-between; width:100%;">' +
+      '<button class="btn btn-ghost" style="padding:8px 0" onclick="closeThread()">← Назад</button>' +
+      '<div style="font-weight:700;font-size:18px; flex:1; text-align:center;">' + esc(thread.name) + '</div>' +
+      (isGeneral ? 
+        '<button class="btn btn-ghost" style="padding:8px 0; font-size:22px;" onclick="showGallery()">📁</button>' 
+        : '<div style="width:40px"></div>') +
+    '</div>';
+    
   renderThreadMessages(threadId);
   showChatBar(threadId);
 }
+
 function renderThreadMessages(threadId){
   const msgs = state.messages[threadId] || [];
   let html = '<div style="display:flex;flex-direction:column;gap:8px">';
@@ -778,25 +844,35 @@ function showChatBar(threadId){
   const bar = document.getElementById('chatBar');
   bar.hidden = false;
   
+  const isGeneral = (threadId === 'general');
+  
   bar.innerHTML =
     '<button class="btn btn-ghost" id="plusBtn" style="font-size:28px; padding:0 10px; font-weight:300;">+</button>' +
+    
     '<div style="flex:1; position:relative; display:flex; align-items:center;">' +
       '<input class="input" id="chatInput" placeholder="Сообщение..." style="width:100%; border-radius:20px; padding:10px 40px 10px 15px;" autocomplete="off">' +
       '<button id="stickerBtn" style="position:absolute; right:12px; background:none; border:none; font-size:20px; cursor:pointer; color:var(--text-3);">😀</button>' +
     '</div>' +
-    '<button class="btn btn-ghost" id="photoBtn" style="font-size:24px; padding:0 10px;">📷</button>' +
+    
+    (isGeneral ? 
+      '<button class="btn btn-ghost" id="photoBtn" style="font-size:24px; padding:0 8px;">📷</button>' 
+      : '') +
+      
     '<button class="btn btn-ghost" id="micBtn" style="font-size:24px; padding:0 10px; color:var(--green);">🎤</button>' +
     '<button class="btn btn-primary" id="sendBtn" style="display:none; border-radius:50%; width:42px; height:42px; padding:0; flex-shrink:0;">➤</button>';
     
   document.getElementById('plusBtn').onclick = () => {
-    toast('📎 Меню вложений скоро появится');
+    toast('📎 Загрузка файлов станет доступна после подключения сервера');
   };
 
-  document.getElementById('photoBtn').onclick = () => {
-    toast('📷 Фото станут доступны после перехода на российский сервер');
-  };
+  if (isGeneral) {
+    document.getElementById('photoBtn').onclick = () => {
+      toast('📷 Загрузка фото станет доступна после подключения сервера');
+    };
+  }
+
   document.getElementById('micBtn').onclick = () => {
-    toast('🎤 Голосовые станут доступны после перехода на российский сервер');
+    toast('🎤 Голосовые станут доступны после подключения сервера');
   };
 
   document.getElementById('stickerBtn').onclick = () => showStickerPanel(threadId);
@@ -850,6 +926,86 @@ function showStickerPanel(threadId){
       closeModal();
     };
   });
+}
+
+/* ГАЛЕРЕЯ */
+function showGallery() {
+  const mockPhotos = [
+    { id: '1', url: 'https://picsum.photos/id/1015/400/400', date: 'Сегодня', name: 'photo1.jpg' },
+    { id: '2', url: 'https://picsum.photos/id/1016/400/400', date: 'Сегодня', name: 'photo2.jpg' },
+    { id: '3', url: 'https://picsum.photos/id/1018/400/400', date: 'Сегодня', name: 'photo3.jpg' },
+    { id: '4', url: 'https://picsum.photos/id/1020/400/400', date: 'Вчера', name: 'photo4.jpg' },
+    { id: '5', url: 'https://picsum.photos/id/1021/400/400', date: 'Вчера', name: 'photo5.jpg' },
+    { id: '6', url: 'https://picsum.photos/id/1024/400/400', date: '12 ноя', name: 'photo6.jpg' }
+  ];
+
+  let html = '';
+  
+  html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">' +
+    '<div style="font-weight:700; font-size:16px;">📸 Фото (6)</div>' +
+    (state.gallerySelectMode 
+      ? '<button class="btn btn-ghost" style="padding:4px 8px; font-size:14px;" onclick="toggleGallerySelectMode()">Отмена</button>' 
+      : '<button class="btn btn-ghost" style="padding:4px 8px; font-size:14px;" onclick="toggleGallerySelectMode()">Выбрать</button>') +
+  '</div>';
+
+  html += '<div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 4px;">';
+  
+  mockPhotos.forEach(p => {
+    const isSelected = state.gallerySelected.includes(p.id);
+    
+    html += '<div style="position:relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background:var(--fill); cursor:pointer;" onclick="' + 
+      (state.gallerySelectMode ? 'toggleGalleryItem(\'' + p.id + '\')' : 'toast(\'Открытие фото на весь экран\')') + '">' +
+      
+      '<img src="' + p.url + '" style="width:100%; height:100%; object-fit:cover; opacity:' + (state.gallerySelectMode && !isSelected ? '0.6' : '1') + ';">' +
+      
+      (!state.gallerySelectMode ? 
+        '<div style="position:absolute; bottom:4px; right:4px; background:rgba(0,0,0,0.6); border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; color:white; font-size:12px;" onclick="event.stopPropagation(); downloadSingleFile(\'' + p.name + '\')">⬇️</div>' 
+        : '') +
+        
+      (state.gallerySelectMode ? 
+        '<div style="position:absolute; top:6px; right:6px; width:22px; height:22px; border-radius:50%; border:2px solid white; background:' + (isSelected ? 'var(--pt-blue)' : 'rgba(0,0,0,0.3)') + '; display:flex; align-items:center; justify-content:center; color:white; font-size:12px;">' + 
+        (isSelected ? '✓' : '') + '</div>' 
+        : '') +
+        
+    '</div>';
+  });
+  
+  html += '</div>';
+
+  if (state.gallerySelectMode && state.gallerySelected.length > 0) {
+    html += '<div style="margin-top: 20px; position: sticky; bottom: 0; background: var(--card); padding: 12px 0; border-top: 1px solid var(--border);">' +
+      '<button class="btn btn-primary" style="width:100%;" onclick="downloadSelectedFiles()">⬇️ Скачать выбранные (' + state.gallerySelected.length + ')</button>' +
+    '</div>';
+  }
+
+  showModal(html, '<div class="row"><h3 style="margin:0;font-size:18px">Архив чата</h3></div>');
+}
+
+function toggleGallerySelectMode() {
+  state.gallerySelectMode = !state.gallerySelectMode;
+  state.gallerySelected = []; 
+  showGallery();
+}
+
+function toggleGalleryItem(id) {
+  const index = state.gallerySelected.indexOf(id);
+  if (index > -1) {
+    state.gallerySelected.splice(index, 1);
+  } else {
+    state.gallerySelected.push(id);
+  }
+  showGallery();
+}
+
+function downloadSingleFile(filename) {
+  toast('Скачивание файла: ' + filename);
+}
+
+function downloadSelectedFiles() {
+  toast('Скачивание ' + state.gallerySelected.length + ' файлов...');
+  state.gallerySelectMode = false;
+  state.gallerySelected = [];
+  closeModal();
 }
 
 /* КОМАНДА */
@@ -1144,6 +1300,8 @@ window.openEventChat = openEventChat; window.toggleCancelEvent = toggleCancelEve
 window.setRsvp = setRsvp; window.openThread = openThread; window.closeThread = closeThread;
 window.showCreateEvent = showCreateEvent; window.showCreatePoll = showCreatePoll; window.deleteVenue = deleteVenue;
 window.openLineupManager = openLineupManager; window.setJerseyColor = setJerseyColor;
+window.showGallery = showGallery; window.toggleGallerySelectMode = toggleGallerySelectMode;
+window.toggleGalleryItem = toggleGalleryItem; window.downloadSingleFile = downloadSingleFile; window.downloadSelectedFiles = downloadSelectedFiles;
 window.votePoll = votePoll; window.closePoll = closePoll;
 window.openUserProfile = openUserProfile; window.editUserRole = editUserRole; window.setUserRole = setUserRole;
 window.removeUser = removeUser; window.showAddPlayer = showAddPlayer; window.addPlayer = addPlayer;
