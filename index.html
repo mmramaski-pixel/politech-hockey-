@@ -152,7 +152,11 @@ function subscribeAll(){
   }));
   state.unsub.push(onSnapshot(collection(db,'events'), snap => {
     DB.events = {}; snap.forEach(d => DB.events[d.id] = d.data());
-    if (!state.threadId) render();
+    if (!state.threadId) {
+      // Если мы на странице события, перерисовываем её, иначе главную
+      if (state.eventId) renderEventDetail(); 
+      else render();
+    }
   }));
   state.unsub.push(onSnapshot(collection(db,'threads'), snap => {
     DB.threads = {}; snap.forEach(d => DB.threads[d.id] = d.data());
@@ -475,12 +479,11 @@ function renderEventDetail(){
   const declined = Object.entries(rsvp).filter(([_,v]) => v === 'declined').map(([uid]) => DB.users[uid]).filter(Boolean);
   const myStatus = rsvp[currentUser.uid];
   
-  const hasLineup = e.lineup && (
-    (e.lineup.positions && Object.keys(e.lineup.positions).length > 0) || 
-    (e.lineup.jerseys && Object.keys(e.lineup.jerseys).length > 0)
-  );
-  const myJersey = (e.lineup && e.lineup.jerseys && e.lineup.jerseys[currentUser.uid]) || '';
-
+  const positions = (e.lineup && e.lineup.positions) ? e.lineup.positions : {};
+  const jerseys = (e.lineup && e.lineup.jerseys) ? e.lineup.jerseys : {};
+  const hasLineup = Object.keys(positions).length > 0 || Object.keys(jerseys).length > 0;
+  
+  const myJersey = jerseys[currentUser.uid] || '';
   const isLocked = hasLineup && !canManageEvents();
 
   let html = '<div class="card"><h2 style="font-size:22px">' + esc(e.title) + (e.cancelled ? ' <span style="color:var(--red);font-size:14px">(отменено)</span>' : '') + '</h2>' +
@@ -499,7 +502,7 @@ function renderEventDetail(){
   html += '<div class="small muted" style="margin-top:8px">Мест: ' + going.length + ' / ' + (e.limitPlayers||22) + (waitlist.length ? ' · резерв: ' + waitlist.length : '') + '</div>';
     
   if (isLocked) {
-    html += '<div style="margin-top:12px; background:var(--fill); padding:10px; border-radius:12px; text-align:center; font-size:14px; color:var(--text-2);">Состав утвержден тренером. Изменения недоступны.</div>';
+    html += '<div style="margin-top:12px; background:var(--fill); padding:10px; border-radius:12px; text-align:center; font-size:14px; color:var(--text-2);">Состав утвержден. Изменения недоступны.</div>';
   } else {
     html += '<div style="display:flex;gap:8px;margin-top:14px">' +
       '<button class="btn ' + (myStatus==='going'?'btn-primary':'btn-secondary') + '" style="flex:1;font-size:14px;padding:10px" onclick="setRsvp(\''+e.id+'\',\'going\')">✓ Иду</button>' +
@@ -530,7 +533,6 @@ function renderEventDetail(){
   
   if (hasLineup) {
     if (isGame) {
-      const positions = e.lineup.positions || {};
       let groups = { goalie: [], defense: [], forward1: [], forward2: [], forward3: [], forward4: [], sub: [] };
       
       Object.keys(positions).forEach(uid => {
@@ -570,7 +572,6 @@ function renderEventDetail(){
       if (e.lineup.lines) html += '<div style="margin-top:12px; border-top:1px dashed var(--border); padding-top:12px;"><strong style="font-size:14px; color:var(--text-2);">📝 Заметки:</strong><br><span style="font-size:14px; white-space:pre-wrap;">' + esc(e.lineup.lines) + '</span></div>';
       html += '</div>';
     } else {
-      const jerseys = e.lineup.jerseys || {};
       let blacks = [];
       let whites = [];
       
@@ -692,7 +693,7 @@ function openLineupManager(eventId) {
   document.getElementById('saveLineupBtn').onclick = async () => {
     const newJerseys = {};
     const newPositions = {};
-    const newRsvp = { ...e.rsvp };
+    const newRsvp = { ...e.rsvp }; // Копируем текущие статусы
     let newGlobalJersey = e.globalJersey || 'home';
     
     if (isGame) {
@@ -705,9 +706,9 @@ function openLineupManager(eventId) {
         const line = document.getElementById('pos_line_' + u.id).value;
         if (role) {
           newPositions[u.id] = { role: role, line: line };
-          newRsvp[u.id] = 'going'; 
+          newRsvp[u.id] = 'going'; // Принудительно ставим "Иду"
         } else {
-          newRsvp[u.id] = 'waitlist'; 
+          newRsvp[u.id] = 'waitlist'; // Если убрали — в резерв
         }
       } else {
         const jersey = document.getElementById('jersey_' + u.id).value;
@@ -727,8 +728,9 @@ function openLineupManager(eventId) {
       rsvp: newRsvp,
       globalJersey: newGlobalJersey
     });
-    closeModal(); toast('Сохранено!');
-    renderEventDetail();
+    closeModal(); 
+    toast('Состав утвержден!');
+    renderEventDetail(); // Принудительно перерисовываем
   };
 }
 
@@ -750,7 +752,7 @@ function renderChatListIfActive(){
   html += '<div class="card row" style="cursor:pointer;margin-bottom:10px; border:2px solid var(--pt-blue-light)" onclick="openThread(\'general\')">' +
     '<div class="avatar" style="width:46px;height:46px;background:var(--grad-pt);font-size:18px">💬</div>' +
     '<div style="flex:1;min-width:0"><div style="font-weight:600">Общий чат</div>' +
-    '<div class="small muted">Фото, файлы, общение</div></div></div>';
+    '<div class="small muted">Главный чат команды</div></div></div>';
 
   const now = Date.now();
   const activeEvents = Object.values(DB.events).filter(e => !e.cancelled && e.startsAt > (now - 86400000)); 
@@ -766,13 +768,6 @@ function renderChatListIfActive(){
   });
 
   document.getElementById('view').innerHTML = html;
-}
-
-function getNextEvent() {
-  const now = Date.now();
-  return Object.values(DB.events)
-    .filter(function(e){ return e.startsAt > now && !e.cancelled; })
-    .sort(function(a,b){ return a.startsAt - b.startsAt; })[0];
 }
 
 function openThread(threadId){
@@ -796,10 +791,13 @@ function renderThread(threadId){
   document.getElementById('hdr').innerHTML = 
     '<div class="row" style="justify-content:space-between; width:100%;">' +
       '<button class="btn btn-ghost" style="padding:8px 0" onclick="closeThread()">← Назад</button>' +
-      '<div style="font-weight:700;font-size:18px; flex:1; text-align:center;">' + esc(thread.name) + '</div>' +
-      (isGeneral ? 
-        '<button class="btn btn-ghost" style="padding:8px 0; font-size:22px;" onclick="showGallery()">📁</button>' 
-        : '<div style="width:40px"></div>') +
+      
+      '<div style="font-weight:700;font-size:18px; flex:1; text-align:center; cursor:pointer; display:flex; justify-content:center; align-items:center; gap:4px;" ' + 
+           (isGeneral ? 'onclick="showGallery()"' : '') + '>' + 
+        esc(thread.name) + (isGeneral ? ' <span style="font-size:14px; color:var(--text-2);">›</span>' : '') + 
+      '</div>' +
+      
+      '<div style="width:40px"></div>' + 
     '</div>';
     
   renderThreadMessages(threadId);
@@ -931,46 +929,62 @@ function showStickerPanel(threadId){
 /* ГАЛЕРЕЯ */
 function showGallery() {
   const mockPhotos = [
-    { id: '1', url: 'https://picsum.photos/id/1015/400/400', date: 'Сегодня', name: 'photo1.jpg' },
-    { id: '2', url: 'https://picsum.photos/id/1016/400/400', date: 'Сегодня', name: 'photo2.jpg' },
-    { id: '3', url: 'https://picsum.photos/id/1018/400/400', date: 'Сегодня', name: 'photo3.jpg' },
-    { id: '4', url: 'https://picsum.photos/id/1020/400/400', date: 'Вчера', name: 'photo4.jpg' },
-    { id: '5', url: 'https://picsum.photos/id/1021/400/400', date: 'Вчера', name: 'photo5.jpg' },
-    { id: '6', url: 'https://picsum.photos/id/1024/400/400', date: '12 ноя', name: 'photo6.jpg' }
+    { id: '1', url: 'https://picsum.photos/id/1015/400/400', type: 'image', date: 'Ноябрь 2026' },
+    { id: '2', url: 'https://picsum.photos/id/1016/400/400', type: 'image', date: 'Ноябрь 2026' },
+    { id: '3', url: 'https://picsum.photos/id/1018/400/400', type: 'video', duration: '1:12', date: 'Ноябрь 2026' },
+    { id: '4', url: 'https://picsum.photos/id/1020/400/400', type: 'image', date: 'Октябрь 2026' },
+    { id: '5', url: 'https://picsum.photos/id/1021/400/400', type: 'video', duration: '0:15', date: 'Октябрь 2026' },
+    { id: '6', url: 'https://picsum.photos/id/1024/400/400', type: 'image', date: 'Октябрь 2026' },
+    { id: '7', url: 'https://picsum.photos/id/1025/400/400', type: 'image', date: 'Октябрь 2026' }
   ];
 
   let html = '';
   
-  html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">' +
-    '<div style="font-weight:700; font-size:16px;">📸 Фото (6)</div>' +
-    (state.gallerySelectMode 
-      ? '<button class="btn btn-ghost" style="padding:4px 8px; font-size:14px;" onclick="toggleGallerySelectMode()">Отмена</button>' 
-      : '<button class="btn btn-ghost" style="padding:4px 8px; font-size:14px;" onclick="toggleGallerySelectMode()">Выбрать</button>') +
+  html += '<div style="display:flex; background:var(--fill); border-radius:20px; padding:4px; margin-bottom:16px;">' +
+    '<button class="btn btn-primary" style="flex:1; padding:8px; border-radius:16px; font-size:13px;">Медиа</button>' +
+    '<button class="btn btn-ghost" style="flex:1; padding:8px; border-radius:16px; font-size:13px; color:var(--text-2);" onclick="toast(\'Музыка пока недоступна\')">Музыка</button>' +
+    '<button class="btn btn-ghost" style="flex:1; padding:8px; border-radius:16px; font-size:13px; color:var(--text-2);" onclick="toast(\'Голосовые пока недоступны\')">Голосовые</button>' +
+    '<button class="btn btn-ghost" style="flex:1; padding:8px; border-radius:16px; font-size:13px; color:var(--text-2);" onclick="toast(\'Ссылки пока недоступны\')">Ссылки</button>' +
   '</div>';
 
-  html += '<div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 4px;">';
+  html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">' +
+    '<div style="font-weight:700; font-size:14px;">📸 Все фото и видео</div>' +
+    (state.gallerySelectMode 
+      ? '<button class="btn btn-ghost" style="padding:4px 8px; font-size:13px;" onclick="toggleGallerySelectMode()">Отмена</button>' 
+      : '<button class="btn btn-ghost" style="padding:4px 8px; font-size:13px;" onclick="toggleGallerySelectMode()">Выбрать</button>') +
+  '</div>';
+
+  html += '<div style="position:relative;">';
+  
+  html += '<div style="position:sticky; top:10px; z-index:10; display:inline-block; background:rgba(37,99,235,0.8); backdrop-filter:blur(4px); color:white; padding:6px 16px; border-radius:20px; font-weight:600; font-size:14px; margin-bottom:8px; margin-left:8px;">Ноябрь 2026</div>';
+
+  html += '<div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 2px; border-radius: 12px; overflow: hidden;">';
   
   mockPhotos.forEach(p => {
     const isSelected = state.gallerySelected.includes(p.id);
     
-    html += '<div style="position:relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background:var(--fill); cursor:pointer;" onclick="' + 
-      (state.gallerySelectMode ? 'toggleGalleryItem(\'' + p.id + '\')' : 'toast(\'Открытие фото на весь экран\')') + '">' +
+    html += '<div style="position:relative; aspect-ratio: 1; background:var(--fill); cursor:pointer;" onclick="' + 
+      (state.gallerySelectMode ? 'toggleGalleryItem(\'' + p.id + '\')' : 'toast(\'Просмотр файла\')') + '">' +
       
-      '<img src="' + p.url + '" style="width:100%; height:100%; object-fit:cover; opacity:' + (state.gallerySelectMode && !isSelected ? '0.6' : '1') + ';">' +
+      '<img src="' + p.url + '" style="width:100%; height:100%; object-fit:cover; opacity:' + (state.gallerySelectMode && !isSelected ? '0.6' : '1') + ';">';
       
-      (!state.gallerySelectMode ? 
-        '<div style="position:absolute; bottom:4px; right:4px; background:rgba(0,0,0,0.6); border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; color:white; font-size:12px;" onclick="event.stopPropagation(); downloadSingleFile(\'' + p.name + '\')">⬇️</div>' 
-        : '') +
+    if (p.type === 'video') {
+      html += '<div style="position:absolute; bottom:4px; right:6px; background:rgba(0,0,0,0.6); color:white; padding:2px 6px; border-radius:8px; font-size:11px; display:flex; align-items:center; gap:4px;">▶ ' + p.duration + '</div>';
+    }
+      
+    if (!state.gallerySelectMode) {
+      html += '<div style="position:absolute; top:6px; right:6px; background:rgba(0,0,0,0.4); border-radius:50%; width:26px; height:26px; display:flex; align-items:center; justify-content:center; color:white; font-size:12px;" onclick="event.stopPropagation(); downloadSingleFile(\'file.jpg\')">⬇️</div>';
+    }
         
-      (state.gallerySelectMode ? 
-        '<div style="position:absolute; top:6px; right:6px; width:22px; height:22px; border-radius:50%; border:2px solid white; background:' + (isSelected ? 'var(--pt-blue)' : 'rgba(0,0,0,0.3)') + '; display:flex; align-items:center; justify-content:center; color:white; font-size:12px;">' + 
-        (isSelected ? '✓' : '') + '</div>' 
-        : '') +
+    if (state.gallerySelectMode) {
+      html += '<div style="position:absolute; top:6px; right:6px; width:22px; height:22px; border-radius:50%; border:2px solid white; background:' + (isSelected ? 'var(--pt-blue)' : 'rgba(0,0,0,0.3)') + '; display:flex; align-items:center; justify-content:center; color:white; font-size:12px;">' + 
+        (isSelected ? '✓' : '') + '</div>';
+    }
         
-    '</div>';
+    html += '</div>';
   });
   
-  html += '</div>';
+  html += '</div></div>';
 
   if (state.gallerySelectMode && state.gallerySelected.length > 0) {
     html += '<div style="margin-top: 20px; position: sticky; bottom: 0; background: var(--card); padding: 12px 0; border-top: 1px solid var(--border);">' +
@@ -978,7 +992,7 @@ function showGallery() {
     '</div>';
   }
 
-  showModal(html, '<div class="row"><h3 style="margin:0;font-size:18px">Архив чата</h3></div>');
+  showModal(html, '<div class="row"><h3 style="margin:0;font-size:18px">Профиль чата</h3></div>');
 }
 
 function toggleGallerySelectMode() {
