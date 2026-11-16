@@ -153,7 +153,6 @@ function subscribeAll(){
   state.unsub.push(onSnapshot(collection(db,'events'), snap => {
     DB.events = {}; snap.forEach(d => DB.events[d.id] = d.data());
     if (!state.threadId) {
-      // Если мы на странице события, перерисовываем её, иначе главную
       if (state.eventId) renderEventDetail(); 
       else render();
     }
@@ -336,14 +335,6 @@ function renderEventCard(e){
 }
 async function setRsvp(eventId, status){
   const e = DB.events[eventId]; if (!e) return;
-  
-  if (e.lineup && e.lineup.positions && Object.keys(e.lineup.positions).length > 0) {
-    if (!canManageEvents()) {
-      toast('Тренер уже составил состав. Ваш статус зафиксирован.');
-      return;
-    }
-  }
-
   const uid = currentUser.uid;
   const rsvp = e.rsvp || {};
   rsvp[uid] = status;
@@ -352,21 +343,6 @@ async function setRsvp(eventId, status){
     if (goingCount > (e.limitPlayers || 22)) { rsvp[uid] = 'waitlist'; toast('Мест нет — вы в резерве'); }
   }
   await updateDoc(doc(db,'events',eventId), { rsvp });
-}
-
-async function setJerseyColor(eventId, color) {
-  const e = DB.events[eventId];
-  if (e.lineup && e.lineup.positions && Object.keys(e.lineup.positions).length > 0) {
-    if (!canManageEvents()) {
-      toast('Тренер уже составил состав. Цвет майки зафиксирован.');
-      return;
-    }
-  }
-  const lineup = e.lineup || {};
-  const jerseys = lineup.jerseys || {};
-  jerseys[currentUser.uid] = color;
-  await updateDoc(doc(db, 'events', eventId), { 'lineup.jerseys': jerseys });
-  toast(color === 'black' ? 'Выбрана черная майка' : color === 'white' ? 'Выбрана белая майка' : color === 'home' ? 'Выбрана домашняя' : 'Выбрана гостевая');
 }
 
 /* КАЛЕНДАРЬ */
@@ -481,10 +457,9 @@ function renderEventDetail(){
   
   const positions = (e.lineup && e.lineup.positions) ? e.lineup.positions : {};
   const jerseys = (e.lineup && e.lineup.jerseys) ? e.lineup.jerseys : {};
-  const hasLineup = Object.keys(positions).length > 0 || Object.keys(jerseys).length > 0;
+  const guests = (e.lineup && e.lineup.guests) ? e.lineup.guests : [];
   
-  const myJersey = jerseys[currentUser.uid] || '';
-  const isLocked = hasLineup && !canManageEvents();
+  const hasLineup = Object.keys(positions).length > 0 || Object.keys(jerseys).length > 0 || guests.length > 0;
 
   let html = '<div class="card"><h2 style="font-size:22px">' + esc(e.title) + (e.cancelled ? ' <span style="color:var(--red);font-size:14px">(отменено)</span>' : '') + '</h2>' +
     '<div class="small muted" style="margin-top:4px">' + formatDate(e.startsAt) + ' · ' + formatTime(e.startsAt) + '</div>' +
@@ -501,24 +476,12 @@ function renderEventDetail(){
 
   html += '<div class="small muted" style="margin-top:8px">Мест: ' + going.length + ' / ' + (e.limitPlayers||22) + (waitlist.length ? ' · резерв: ' + waitlist.length : '') + '</div>';
     
-  if (isLocked) {
-    html += '<div style="margin-top:12px; background:var(--fill); padding:10px; border-radius:12px; text-align:center; font-size:14px; color:var(--text-2);">Состав утвержден. Изменения недоступны.</div>';
-  } else {
-    html += '<div style="display:flex;gap:8px;margin-top:14px">' +
-      '<button class="btn ' + (myStatus==='going'?'btn-primary':'btn-secondary') + '" style="flex:1;font-size:14px;padding:10px" onclick="setRsvp(\''+e.id+'\',\'going\')">✓ Иду</button>' +
-      '<button class="btn ' + (myStatus==='waitlist'?'btn-primary':'btn-secondary') + '" style="flex:1;font-size:14px;padding:10px" onclick="setRsvp(\''+e.id+'\',\'waitlist\')">Резерв</button>' +
-      '<button class="btn ' + (myStatus==='declined'?'btn-primary':'btn-secondary') + '" style="flex:1;font-size:14px;padding:10px" onclick="setRsvp(\''+e.id+'\',\'declined\')">✕</button>' +
-    '</div>';
-  }
-
-  if (!isGame && (myStatus === 'going' || myStatus === 'waitlist') && !isLocked) {
-    html += '<div style="margin-top:12px; padding:12px; background:var(--fill); border-radius:12px; border:1px solid var(--border);">' +
-      '<div style="font-size:14px; font-weight:600; margin-bottom:8px; text-align:center;">Цвет вашей майки:</div>' +
-      '<div class="row" style="gap:8px;">' +
-        '<button class="btn ' + (myJersey === 'black' ? 'btn-primary' : 'btn-secondary') + '" style="flex:1; padding:10px;" onclick="setJerseyColor(\''+e.id+'\', \'black\')">⚫ Черная</button>' +
-        '<button class="btn ' + (myJersey === 'white' ? 'btn-primary' : 'btn-secondary') + '" style="flex:1; padding:10px; background:' + (myJersey === 'white' ? 'var(--text)' : 'var(--card)') + '; color:' + (myJersey === 'white' ? '#fff' : 'var(--text)') + ';" onclick="setJerseyColor(\''+e.id+'\', \'white\')">⚪ Белая</button>' +
-      '</div></div>';
-  }
+  // Игрок может менять свой RSVP (желание)
+  html += '<div style="display:flex;gap:8px;margin-top:14px">' +
+    '<button class="btn ' + (myStatus==='going'?'btn-primary':'btn-secondary') + '" style="flex:1;font-size:14px;padding:10px" onclick="setRsvp(\''+e.id+'\',\'going\')">✓ Иду</button>' +
+    '<button class="btn ' + (myStatus==='waitlist'?'btn-primary':'btn-secondary') + '" style="flex:1;font-size:14px;padding:10px" onclick="setRsvp(\''+e.id+'\',\'waitlist\')">Резерв</button>' +
+    '<button class="btn ' + (myStatus==='declined'?'btn-primary':'btn-secondary') + '" style="flex:1;font-size:14px;padding:10px" onclick="setRsvp(\''+e.id+'\',\'declined\')">✕</button>' +
+  '</div>';
     
   if (canManageEvents()) {
     html += '<div class="row" style="gap:8px;margin-top:12px">' +
@@ -531,6 +494,7 @@ function renderEventDetail(){
   
   html += '<div style="margin-top:8px"><button class="btn btn-secondary" style="width:100%;font-size:14px;padding:10px" onclick="openEventChat(\''+e.id+'\')">💬 Чат события</button></div></div>';
   
+  // Отображение УТВЕРЖДЕННОГО состава
   if (hasLineup) {
     if (isGame) {
       let groups = { goalie: [], defense: [], forward1: [], forward2: [], forward3: [], forward4: [], sub: [] };
@@ -568,7 +532,14 @@ function renderEventDetail(){
       renderGroup('4-е звено', groups.forward4, '⚔️');
       renderGroup('Запасные', groups.sub, '🪑');
       
-      if (totalInLineup === 0) html += '<div class="small muted" style="text-align:center;">Никто еще не добавлен в состав.</div>';
+      if (guests.length > 0) {
+        totalInLineup += guests.length;
+        html += `<div style="margin-bottom:12px;"><strong style="font-size:14px; color:var(--text-2);">👤 Гости</strong><br>`;
+        guests.forEach(g => { html += `<div style="font-size:14px; margin-top:4px;">${esc(g.name)}</div>`; });
+        html += '</div>';
+      }
+      
+      if (totalInLineup === 0) html += '<div class="small muted" style="text-align:center;">Тренер еще не составил состав.</div>';
       if (e.lineup.lines) html += '<div style="margin-top:12px; border-top:1px dashed var(--border); padding-top:12px;"><strong style="font-size:14px; color:var(--text-2);">📝 Заметки:</strong><br><span style="font-size:14px; white-space:pre-wrap;">' + esc(e.lineup.lines) + '</span></div>';
       html += '</div>';
     } else {
@@ -576,15 +547,13 @@ function renderEventDetail(){
       let whites = [];
       
       Object.keys(jerseys).forEach(uid => {
-         if (rsvp[uid] === 'going') {
-           const u = DB.users[uid];
-           if (!u) return;
-           if (jerseys[uid] === 'black') blacks.push(u);
-           if (jerseys[uid] === 'white') whites.push(u);
-         }
+         const u = DB.users[uid];
+         if (!u) return;
+         if (jerseys[uid] === 'black') blacks.push(u);
+         if (jerseys[uid] === 'white') whites.push(u);
       });
       
-      html += '<h4 style="margin:16px 0 8px;color:var(--pt-blue)">📋 Список на тренировку</h4>';
+      html += '<h4 style="margin:16px 0 8px;color:var(--pt-blue)">📋 Распределение по цветам</h4>';
       html += '<div class="card" style="padding:12px; background:var(--fill);">';
       
       if (blacks.length) {
@@ -597,13 +566,19 @@ function renderEventDetail(){
         whites.forEach(u => { html += `<div style="font-size:14px; margin-top:4px;">${esc(u.name)}</div>`; });
         html += '</div>';
       }
-      if (!blacks.length && !whites.length) {
-         html += '<div class="small muted" style="text-align:center;">Пока никто не распределен по цветам.</div>';
+      if (guests.length > 0) {
+        html += '<div style="margin-bottom:12px;"><strong style="font-size:14px; color:var(--text-2);">👤 Гости</strong><br>';
+        guests.forEach(g => { html += `<div style="font-size:14px; margin-top:4px;">${esc(g.name)} ${g.color==='black'?'⚫':(g.color==='white'?'⚪':'')}</div>`; });
+        html += '</div>';
+      }
+      if (!blacks.length && !whites.length && !guests.length) {
+         html += '<div class="small muted" style="text-align:center;">Тренер еще не распределил игроков по цветам.</div>';
       }
       html += '</div>';
     }
   }
 
+  // Блок заявок
   const list = (title,color,arr) => { if (!arr.length) return ''; let s = '<h4 style="margin:14px 0 8px;color:'+color+'">' + title + ' (' + arr.length + ')</h4>'; arr.forEach(u => { s += '<div class="card row" style="margin-bottom:8px;padding:10px">' + renderAvatar(u, 38) + '<div style="font-weight:600">' + esc(u.name) + '</div></div>'; }); return s; };
   html += list('✓ Изъявили желание','var(--green)',going);
   html += list('⏳ Резерв (желание)','var(--orange)',waitlist);
@@ -622,6 +597,7 @@ function openLineupManager(eventId) {
   const jerseys = lineup.jerseys || {}; 
   const positions = lineup.positions || {};
   const linesText = lineup.lines || '';
+  const guests = lineup.guests || [];
   const globalJersey = e.globalJersey || 'home';
 
   let html = '';
@@ -636,7 +612,7 @@ function openLineupManager(eventId) {
     '</div>';
     html += '<h3 style="margin-bottom:12px;font-size:16px">Состав на игру</h3>';
   } else {
-    html += '<h3 style="margin-bottom:12px;font-size:16px">Список на тренировку</h3>';
+    html += '<h3 style="margin-bottom:12px;font-size:16px">Распределение цветов (Тренировка)</h3>';
   }
   
   allUsers.forEach(u => {
@@ -660,7 +636,7 @@ function openLineupManager(eventId) {
       
     if (isGame) {
       html += '<select class="input" id="pos_role_' + u.id + '" style="flex:1; padding:6px; font-size:12px;">' +
-          '<option value="" ' + (currentPos.role===''?'selected':'') + '>❌ Убрать в резерв</option>' +
+          '<option value="" ' + (currentPos.role===''?'selected':'') + '>— Не в составе —</option>' +
           '<option value="goalie" ' + (currentPos.role==='goalie'?'selected':'') + '>🥅 Вратарь</option>' +
           '<option value="defense" ' + (currentPos.role==='defense'?'selected':'') + '>🛡 Защитник</option>' +
           '<option value="forward" ' + (currentPos.role==='forward'?'selected':'') + '>⚔️ Нападающий</option>' +
@@ -674,7 +650,7 @@ function openLineupManager(eventId) {
         '</select>';
     } else {
       html += '<select class="input" id="jersey_' + u.id + '" style="flex:1; padding:6px; font-size:13px;">' +
-          '<option value="">❌ Убрать в резерв</option>' +
+          '<option value="" ' + (currentJ===''?'selected':'') + '>— Не распределен —</option>' +
           '<option value="black" ' + (currentJ==='black'?'selected':'') + '>⚫ Черная</option>' +
           '<option value="white" ' + (currentJ==='white'?'selected':'') + '>⚪ Белая</option>' +
         '</select>';
@@ -683,17 +659,56 @@ function openLineupManager(eventId) {
     html += '</div></div>';
   });
 
+  html += '<h3 style="margin:16px 0 12px;font-size:16px">Гостевые игроки</h3>';
+  html += '<div id="guestList">';
+  guests.forEach((g, i) => {
+    html += '<div class="row" style="margin-bottom:8px; gap:6px;" id="guest_row_' + i + '">' +
+      '<input class="input" id="guest_name_' + i + '" value="' + esc(g.name) + '" placeholder="Имя гостя" style="flex:1; padding:8px;">' +
+      (isGame ? 
+        '<input class="input" type="number" id="guest_home_' + i + '" value="' + (g.homeNum || '') + '" placeholder="Дом" style="width:55px; padding:8px; text-align:center;">' :
+        '<select class="input" id="guest_color_' + i + '" style="width:90px; padding:8px; font-size:13px;">' +
+          '<option value="">Цвет</option>' +
+          '<option value="black" ' + (g.color==='black'?'selected':'') + '>⚫ Черная</option>' +
+          '<option value="white" ' + (g.color==='white'?'selected':'') + '>⚪ Белая</option>' +
+        '</select>') +
+      '<button class="btn btn-ghost" style="padding:4px; color:var(--red);" onclick="document.getElementById(\'guest_row_' + i + '\').remove()">✕</button>' +
+    '</div>';
+  });
+  html += '</div>';
+  html += '<button class="btn btn-secondary" id="addGuestBtn" style="font-size:13px; padding:8px; margin-bottom:12px;">+ Добавить гостя</button>';
+
   if (isGame) {
     html += '<h3 style="margin:16px 0 12px;font-size:16px">Заметки (Звенья)</h3>';
     html += '<textarea class="input" id="lineupLines" style="height:80px; resize:none; font-size:14px;" placeholder="Любые заметки по тактике...">' + esc(linesText) + '</textarea>';
   }
 
-  showModal(html, '<div class="row" style="justify-content:space-between"><h3 style="margin:0;font-size:18px">Планшет тренера</h3><button class="btn btn-primary" id="saveLineupBtn" style="padding:10px 18px;font-size:14px">Утвердить</button></div>');
+  showModal(html, '<div class="row" style="justify-content:space-between"><h3 style="margin:0;font-size:18px">Планшет тренера</h3><button class="btn btn-primary" id="saveLineupBtn" style="padding:10px 18px;font-size:14px">Опубликовать</button></div>');
+
+  let guestCount = guests.length;
+  document.getElementById('addGuestBtn').onclick = () => {
+    const wrap = document.createElement('div');
+    wrap.className = 'row';
+    wrap.style = 'margin-bottom:8px; gap:6px;';
+    wrap.id = 'guest_row_' + guestCount;
+    
+    let innerHTML = '<input class="input" id="guest_name_' + guestCount + '" placeholder="Имя гостя" style="flex:1; padding:8px;">';
+    if (isGame) {
+      innerHTML += '<input class="input" type="number" id="guest_home_' + guestCount + '" placeholder="Дом" style="width:55px; padding:8px; text-align:center;">';
+    } else {
+      innerHTML += '<select class="input" id="guest_color_' + guestCount + '" style="width:90px; padding:8px; font-size:13px;">' +
+        '<option value="">Цвет</option><option value="black">⚫ Черная</option><option value="white">⚪ Белая</option>' +
+      '</select>';
+    }
+    innerHTML += '<button class="btn btn-ghost" style="padding:4px; color:var(--red);" onclick="document.getElementById(\'guest_row_' + guestCount + '\').remove()">✕</button>';
+    
+    wrap.innerHTML = innerHTML;
+    document.getElementById('guestList').appendChild(wrap);
+    guestCount++;
+  };
 
   document.getElementById('saveLineupBtn').onclick = async () => {
     const newJerseys = {};
     const newPositions = {};
-    const newRsvp = { ...e.rsvp }; // Копируем текущие статусы
     let newGlobalJersey = e.globalJersey || 'home';
     
     if (isGame) {
@@ -706,31 +721,38 @@ function openLineupManager(eventId) {
         const line = document.getElementById('pos_line_' + u.id).value;
         if (role) {
           newPositions[u.id] = { role: role, line: line };
-          newRsvp[u.id] = 'going'; // Принудительно ставим "Иду"
-        } else {
-          newRsvp[u.id] = 'waitlist'; // Если убрали — в резерв
         }
       } else {
         const jersey = document.getElementById('jersey_' + u.id).value;
         if (jersey) {
           newJerseys[u.id] = jersey;
-          newRsvp[u.id] = 'going';
-        } else {
-          newRsvp[u.id] = 'waitlist';
         }
       }
+    });
+
+    const newGuests = [];
+    document.querySelectorAll('#guestList .row').forEach(row => {
+      const nameInput = row.querySelector('input[id^="guest_name_"]');
+      if (!nameInput || !nameInput.value.trim()) return;
+      
+      const gData = { name: nameInput.value.trim() };
+      if (isGame) {
+        gData.homeNum = row.querySelector('input[id^="guest_home_"]').value.trim();
+      } else {
+        gData.color = row.querySelector('select[id^="guest_color_"]').value;
+      }
+      newGuests.push(gData);
     });
 
     const newLines = isGame ? document.getElementById('lineupLines').value.trim() : '';
 
     await updateDoc(doc(db, 'events', eventId), {
-      lineup: { jerseys: newJerseys, lines: newLines, positions: newPositions },
-      rsvp: newRsvp,
+      lineup: { jerseys: newJerseys, lines: newLines, positions: newPositions, guests: newGuests },
       globalJersey: newGlobalJersey
     });
     closeModal(); 
-    toast('Состав утвержден!');
-    renderEventDetail(); // Принудительно перерисовываем
+    toast('Состав опубликован!');
+    renderEventDetail();
   };
 }
 
