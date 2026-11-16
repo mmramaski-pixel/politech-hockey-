@@ -110,7 +110,7 @@ body.dark-theme input:checked + .slider { background-color: var(--green); }
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, arrayUnion, arrayRemove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, arrayUnion } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyB05YHmSSZgCFM-FYwnMhbk4eBdOoVNHss",
@@ -187,7 +187,7 @@ function closeModal(){ document.getElementById('modalBg').classList.remove('open
 
 /* СОСТОЯНИЕ */
 let DB = { users:{}, events:{}, threads:{}, polls:{}, venues:{} };
-let state = { tab:'home', threadId:null, eventId:null, eventFromTab:'calendar', messages:{}, unsub:[], birthdayChecked:false };
+let state = { tab:'home', threadId:null, eventId:null, eventFromTab:'calendar', messages:{}, unsub:[], birthdayChecked:false, gallerySelectMode: false, gallerySelected: [] };
 let currentUser = null, currentProfile = null;
 function me(){ return currentProfile; }
 function hasRole(){ const arr = [].slice.call(arguments); return !!currentProfile && arr.indexOf(currentProfile.role) >= 0; }
@@ -651,7 +651,7 @@ window.setTab = setTab; window.openEvent = openEvent; window.backFromEvent = bac
 window.openEventChat = openEventChat; window.toggleCancelEvent = toggleCancelEvent; window.deleteEvent = deleteEvent;
 window.setRsvp = setRsvp; window.openThread = openThread; window.closeThread = closeThread;
 window.showCreateEvent = showCreateEvent; window.showCreatePoll = showCreatePoll; window.deleteVenue = deleteVenue;
-window.openLineupManager = openLineupManager; window.setJerseyColor = setJerseyColor;
+window.openLineupManager = openLineupManager;
 window.showGallery = showGallery; window.toggleGallerySelectMode = toggleGallerySelectMode;
 window.toggleGalleryItem = toggleGalleryItem; window.downloadSingleFile = downloadSingleFile; window.downloadSelectedFiles = downloadSelectedFiles;
 window.openCamera = openCamera; window.openMessageMenu = openMessageMenu;
