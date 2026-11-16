@@ -141,6 +141,7 @@ function renderAvatar(user, size){ size = size || 48; if (!user) return ''; cons
 function subscribeAll(){
   state.unsub.forEach(u => { try { u(); } catch(_){} });
   state.unsub = [];
+  
   state.unsub.push(onSnapshot(collection(db,'users'), snap => {
     DB.users = {}; snap.forEach(d => DB.users[d.id] = d.data());
     if (currentUser && DB.users[currentUser.uid]) currentProfile = DB.users[currentUser.uid];
@@ -150,6 +151,7 @@ function subscribeAll(){
       checkBirthdayCongrats().catch(e => console.warn('birthday check:', e));
     }
   }));
+  
   state.unsub.push(onSnapshot(collection(db,'events'), snap => {
     DB.events = {}; snap.forEach(d => DB.events[d.id] = d.data());
     if (!state.threadId) {
@@ -157,14 +159,23 @@ function subscribeAll(){
       else render();
     }
   }));
+  
   state.unsub.push(onSnapshot(collection(db,'threads'), snap => {
     DB.threads = {}; snap.forEach(d => DB.threads[d.id] = d.data());
+    
+    // ЖЕСТКАЯ ГАРАНТИЯ, ЧТО ОБЩИЙ ЧАТ СУЩЕСТВУЕТ
+    if (!DB.threads['general']) {
+      DB.threads['general'] = { id: 'general', type: 'general', name: 'Общий чат', messages: [], pinned: [] };
+    }
+    
     renderChatListIfActive();
   }));
+  
   state.unsub.push(onSnapshot(collection(db,'polls'), snap => {
     DB.polls = {}; snap.forEach(d => DB.polls[d.id] = d.data());
     if (state.tab === 'home') render();
   }));
+  
   state.unsub.push(onSnapshot(collection(db,'venues'), snap => {
     DB.venues = {}; snap.forEach(d => DB.venues[d.id] = d.data());
     if (state.tab === 'calendar') render();
@@ -771,6 +782,7 @@ function renderChatListIfActive(){
   
   let html = '';
   
+  // Общий чат ВСЕГДА первый
   html += '<div class="card row" style="cursor:pointer;margin-bottom:10px; border:2px solid var(--pt-blue-light)" onclick="openThread(\'general\')">' +
     '<div class="avatar" style="width:46px;height:46px;background:var(--grad-pt);font-size:18px">💬</div>' +
     '<div style="flex:1;min-width:0"><div style="font-weight:600">Общий чат</div>' +
@@ -781,7 +793,6 @@ function renderChatListIfActive(){
   
   activeEvents.sort((a,b) => b.startsAt - a.startsAt).forEach(e => {
     const threadId = 'event_' + e.id;
-    if (!DB.threads[threadId]) return;
     
     html += '<div class="card row" style="cursor:pointer;margin-bottom:10px; border:1px solid var(--border)" onclick="openThread(\''+threadId+'\')">' +
       '<div class="avatar" style="width:46px;height:46px;background:var(--fill);font-size:18px">🏒</div>' +
@@ -806,7 +817,7 @@ function openThread(threadId){
 function closeThread(){ if (state.unsub._msgs) { state.unsub._msgs(); state.unsub._msgs = null; } state.threadId = null; render(); }
 
 function renderThread(threadId){
-  const thread = DB.threads[threadId]; if (!thread) { closeThread(); return; }
+  const thread = DB.threads[threadId] || { name: 'Чат' }; 
   
   const isGeneral = (threadId === 'general');
   
@@ -864,37 +875,19 @@ function showChatBar(threadId){
   const bar = document.getElementById('chatBar');
   bar.hidden = false;
   
-  const isGeneral = (threadId === 'general');
-  
   bar.innerHTML =
-    '<button class="btn btn-ghost" id="plusBtn" style="font-size:28px; padding:0 10px; font-weight:300;">+</button>' +
+    '<button class="btn btn-ghost" id="attachBtn" style="font-size:24px; padding:0 10px; color:var(--text-2);">📎</button>' +
     
     '<div style="flex:1; position:relative; display:flex; align-items:center;">' +
-      '<input class="input" id="chatInput" placeholder="Сообщение..." style="width:100%; border-radius:20px; padding:10px 40px 10px 15px;" autocomplete="off">' +
+      '<input class="input" id="chatInput" placeholder="Сообщение" style="width:100%; border-radius:20px; padding:10px 40px 10px 15px; background:var(--fill); border:none; font-size:15px;" autocomplete="off">' +
       '<button id="stickerBtn" style="position:absolute; right:12px; background:none; border:none; font-size:20px; cursor:pointer; color:var(--text-3);">😀</button>' +
     '</div>' +
     
-    (isGeneral ? 
-      '<button class="btn btn-ghost" id="photoBtn" style="font-size:24px; padding:0 8px;">📷</button>' 
-      : '') +
-      
-    '<button class="btn btn-ghost" id="micBtn" style="font-size:24px; padding:0 10px; color:var(--green);">🎤</button>' +
-    '<button class="btn btn-primary" id="sendBtn" style="display:none; border-radius:50%; width:42px; height:42px; padding:0; flex-shrink:0;">➤</button>';
+    '<button class="btn btn-ghost" id="micBtn" style="font-size:24px; padding:0 10px; color:var(--text-2);">🎤</button>' +
+    '<button class="btn btn-primary" id="sendBtn" style="display:none; border-radius:50%; width:42px; height:42px; padding:0; flex-shrink:0; margin-left:6px;">➤</button>';
     
-  document.getElementById('plusBtn').onclick = () => {
-    toast('📎 Загрузка файлов станет доступна после подключения сервера');
-  };
-
-  if (isGeneral) {
-    document.getElementById('photoBtn').onclick = () => {
-      toast('📷 Загрузка фото станет доступна после подключения сервера');
-    };
-  }
-
-  document.getElementById('micBtn').onclick = () => {
-    toast('🎤 Голосовые станут доступны после подключения сервера');
-  };
-
+  document.getElementById('attachBtn').onclick = () => showAttachMenu(threadId);
+  document.getElementById('micBtn').onclick = () => toast('🎤 Голосовые станут доступны после подключения сервера');
   document.getElementById('stickerBtn').onclick = () => showStickerPanel(threadId);
   
   const input = document.getElementById('chatInput');
@@ -925,6 +918,77 @@ function showChatBar(threadId){
   };
   
   setTimeout(() => input.focus(), 100);
+}
+
+function showAttachMenu(threadId) {
+  const html = `
+    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; padding:10px 0;">
+      <!-- Галерея -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="toast('Галерея появится после подключения сервера'); closeModal();">
+        <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#3B82F6,#60A5FA); display:flex; align-items:center; justify-content:center; font-size:24px; color:white;">🖼</div>
+        <span style="font-size:12px;">Галерея</span>
+      </div>
+      
+      <!-- Камера (Фото) -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="openCamera('photo')">
+        <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#EF4444,#F87171); display:flex; align-items:center; justify-content:center; font-size:24px; color:white;">📷</div>
+        <span style="font-size:12px;">Камера</span>
+      </div>
+      
+      <!-- Камера (Видео) -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="openCamera('video')">
+        <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#8B5CF6,#A78BFA); display:flex; align-items:center; justify-content:center; font-size:24px; color:white;">🎥</div>
+        <span style="font-size:12px;">Видео</span>
+      </div>
+      
+      <!-- Файл -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="toast('Файлы появятся после подключения сервера'); closeModal();">
+        <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#F59E0B,#FCD34D); display:flex; align-items:center; justify-content:center; font-size:24px; color:white;">📄</div>
+        <span style="font-size:12px;">Файл</span>
+      </div>
+      
+      <!-- Геопозиция -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="toast('Геопозиция появится позже'); closeModal();">
+        <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#10B981,#34D399); display:flex; align-items:center; justify-content:center; font-size:24px; color:white;">📍</div>
+        <span style="font-size:12px;">Геопозиция</span>
+      </div>
+      
+      <!-- Опрос -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="showCreatePoll('${threadId}'); closeModal();">
+        <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#6366F1,#818CF8); display:flex; align-items:center; justify-content:center; font-size:24px; color:white;">📊</div>
+        <span style="font-size:12px;">Опрос</span>
+      </div>
+    </div>
+  `;
+  showModal(html, '<div class="row"><h3 style="margin:0;font-size:16px">Прикрепить</h3></div>');
+}
+
+function openCamera(type) {
+  closeModal(); // Закрываем меню
+  
+  const input = document.createElement('input');
+  input.type = 'file';
+  
+  if (type === 'photo') {
+    input.accept = 'image/*';
+    input.capture = 'environment'; // Открывает заднюю камеру
+  } else {
+    input.accept = 'video/*';
+    input.capture = 'environment'; // Открывает запись видео
+  }
+  
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Показываем пользователю, что файл выбран
+    toast(type === 'photo' ? '📷 Фото сделано! (Загрузка появится после переезда на сервер)' : '🎥 Видео записано! (Загрузка появится после переезда на сервер)');
+    
+    // Здесь в будущем будет код загрузки в Firebase Storage или на российский сервер
+    console.log('Выбран файл:', file.name, file.size, file.type);
+  };
+  
+  input.click();
 }
 
 async function sendTextMessage(threadId){
@@ -1338,6 +1402,7 @@ window.showCreateEvent = showCreateEvent; window.showCreatePoll = showCreatePoll
 window.openLineupManager = openLineupManager; window.setJerseyColor = setJerseyColor;
 window.showGallery = showGallery; window.toggleGallerySelectMode = toggleGallerySelectMode;
 window.toggleGalleryItem = toggleGalleryItem; window.downloadSingleFile = downloadSingleFile; window.downloadSelectedFiles = downloadSelectedFiles;
+window.openCamera = openCamera;
 window.votePoll = votePoll; window.closePoll = closePoll;
 window.openUserProfile = openUserProfile; window.editUserRole = editUserRole; window.setUserRole = setUserRole;
 window.removeUser = removeUser; window.showAddPlayer = showAddPlayer; window.addPlayer = addPlayer;
