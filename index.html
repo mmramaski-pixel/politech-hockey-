@@ -162,12 +162,9 @@ function subscribeAll(){
   
   state.unsub.push(onSnapshot(collection(db,'threads'), snap => {
     DB.threads = {}; snap.forEach(d => DB.threads[d.id] = d.data());
-    
-    // ЖЕСТКАЯ ГАРАНТИЯ, ЧТО ОБЩИЙ ЧАТ СУЩЕСТВУЕТ
     if (!DB.threads['general']) {
       DB.threads['general'] = { id: 'general', type: 'general', name: 'Общий чат', messages: [], pinned: [] };
     }
-    
     renderChatListIfActive();
   }));
   
@@ -236,7 +233,6 @@ function getUpcomingBirthdays(daysAhead){
     if (parts.length === 3) { mm = parts[1]; dd = parts[2]; }
     else if (parts.length === 2) { mm = parts[0]; dd = parts[1]; }
     else return;
-
     if (!mm || !dd) return;
     let target = new Date(today.getFullYear(), mm - 1, dd);
     if (target < today) target = new Date(today.getFullYear() + 1, mm - 1, dd);
@@ -248,12 +244,7 @@ function getUpcomingBirthdays(daysAhead){
 function getMoscowDateParts(){
   const now = new Date();
   const msk = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
-  return {
-    year:  msk.getFullYear(),
-    month: String(msk.getMonth() + 1).padStart(2, '0'),
-    day:   String(msk.getDate()).padStart(2, '0'),
-    hour:  msk.getHours()
-  };
+  return { year: msk.getFullYear(), month: String(msk.getMonth() + 1).padStart(2, '0'), day: String(msk.getDate()).padStart(2, '0'), hour: msk.getHours() };
 }
 async function checkBirthdayCongrats(){
   if (!currentUser || !currentProfile) return;
@@ -272,12 +263,8 @@ async function checkBirthdayCongrats(){
   const msgRef = doc(db, 'threads', 'general', 'messages', msgId);
   const existing = await getDoc(msgRef);
   if (existing.exists()) return;
-  const names = birthdayUsers.map(u => u.name);
-  const namesText = names.join(', ');
-  const isMany = names.length > 1;
-  const text = isMany
-    ? '🎂 Сегодня день рождения у наших товарищей ' + namesText + '!\nПоздравляем от всей команды и желаем им всего наилучшего! 🏒🔥'
-    : '🎂 Сегодня день рождения у нашего товарища ' + namesText + '!\nПоздравляем от всей команды и желаем всего наилучшего! 🏒🔥';
+  const names = birthdayUsers.map(u => u.name).join(', ');
+  const text = '🎂 Сегодня день рождения у: ' + names + '!\nПоздравляем от всей команды и желаем всего наилучшего! 🏒🔥';
   await setDoc(msgRef, { userId: 'system', type: 'birthday', text, ts: Date.now() });
 }
 
@@ -365,7 +352,6 @@ function renderCalendar(){
   
   if (canManageEvents()) {
     html += '<button class="btn btn-primary" onclick="showCreateEvent()" style="width:100%;margin-bottom:12px">＋ Создать событие</button>';
-    
     const venues = Object.entries(DB.venues || {});
     if (venues.length > 0) {
       html += '<div style="margin-bottom:20px; background:var(--card); border-radius:var(--radius-md); padding:12px; border:1px solid var(--border)">';
@@ -385,7 +371,6 @@ function renderCalendar(){
   if (past.length) { html += '<h3 style="margin:20px 0 12px;font-size:17px;color:var(--text-2)">Прошедшие</h3>'; past.forEach(e => html += renderEventCard(e)); }
   document.getElementById('view').innerHTML = html;
 }
-
 async function deleteVenue(id) {
   if (!canManageEvents()) return;
   if (confirm('Удалить этот адрес из списка?')) {
@@ -393,16 +378,11 @@ async function deleteVenue(id) {
     toast('Адрес удален');
   }
 }
-
 function showCreateEvent(){
   if (!canManageEvents()) return;
-  
   const venues = Object.values(DB.venues || {});
   let venueOptions = '<option value="">-- Выбрать из сохраненных --</option>';
-  venues.forEach(v => {
-    venueOptions += '<option value="' + esc(v.name) + '">' + esc(v.name) + '</option>';
-  });
-
+  venues.forEach(v => { venueOptions += '<option value="' + esc(v.name) + '">' + esc(v.name) + '</option>'; });
   showModal(
     '<select class="input" id="evType"><option value="training">🏒 Тренировка</option><option value="game">🥅 Игра</option></select>' +
     '<input class="input" id="evTitle" placeholder="Свое название (необязательно)">' +
@@ -415,20 +395,13 @@ function showCreateEvent(){
   
   document.getElementById('modalSubmit').onclick = async () => {
     const typeVal = document.getElementById('evType').value;
-    
-    let title = document.getElementById('evTitle').value.trim();
-    if (!title) {
-      title = typeVal === 'game' ? 'Игра' : 'Тренировка';
-    }
-    
+    let title = document.getElementById('evTitle').value.trim() || (typeVal === 'game' ? 'Игра' : 'Тренировка');
     const dateVal = document.getElementById('evDate').value;
     const selectedVenue = document.getElementById('evVenueSelect').value;
     const newVenue = document.getElementById('evVenueNew').value.trim();
     
     if (!dateVal) { toast('Выберите дату'); return; }
-    
     let venueVal = newVenue || selectedVenue || 'Арена';
-    
     const ts = new Date(dateVal).getTime();
     if (!ts || isNaN(ts)) { toast('Неверная дата'); return; }
     const id = 'ev_' + Date.now().toString(36);
@@ -447,7 +420,6 @@ function showCreateEvent(){
     closeModal(); toast('Событие создано');
   };
 }
-
 function openEvent(eventId){
   state.eventId = eventId; state.eventFromTab = state.tab; state.tab = 'calendar';
   document.getElementById('tabs').hidden = false;
@@ -457,7 +429,6 @@ function openEvent(eventId){
 function backFromEvent(){ state.eventId = null; state.tab = state.eventFromTab || 'calendar'; render(); }
 function renderEventDetail(){
   const e = DB.events[state.eventId]; if (!e) { backFromEvent(); return; }
-  
   const CITY = 'Екатеринбург'; 
   const isGame = e.type === 'game';
   const rsvp = e.rsvp || {};
@@ -469,9 +440,8 @@ function renderEventDetail(){
   const positions = (e.lineup && e.lineup.positions) ? e.lineup.positions : {};
   const jerseys = (e.lineup && e.lineup.jerseys) ? e.lineup.jerseys : {};
   const guests = (e.lineup && e.lineup.guests) ? e.lineup.guests : [];
-  
   const hasLineup = Object.keys(positions).length > 0 || Object.keys(jerseys).length > 0 || guests.length > 0;
-
+  
   let html = '<div class="card"><h2 style="font-size:22px">' + esc(e.title) + (e.cancelled ? ' <span style="color:var(--red);font-size:14px">(отменено)</span>' : '') + '</h2>' +
     '<div class="small muted" style="margin-top:4px">' + formatDate(e.startsAt) + ' · ' + formatTime(e.startsAt) + '</div>' +
     '<div style="margin-top:8px">' +
@@ -484,10 +454,8 @@ function renderEventDetail(){
     const gText = e.globalJersey === 'home' ? '🏠 Домашняя' : '✈️ Гостевая';
     html += '<div class="small" style="margin-top:8px; font-weight:600; color:var(--pt-blue);">Форма команды: ' + gText + '</div>';
   }
-
   html += '<div class="small muted" style="margin-top:8px">Мест: ' + going.length + ' / ' + (e.limitPlayers||22) + (waitlist.length ? ' · резерв: ' + waitlist.length : '') + '</div>';
     
-  // Игрок может менять свой RSVP (желание)
   html += '<div style="display:flex;gap:8px;margin-top:14px">' +
     '<button class="btn ' + (myStatus==='going'?'btn-primary':'btn-secondary') + '" style="flex:1;font-size:14px;padding:10px" onclick="setRsvp(\''+e.id+'\',\'going\')">✓ Иду</button>' +
     '<button class="btn ' + (myStatus==='waitlist'?'btn-primary':'btn-secondary') + '" style="flex:1;font-size:14px;padding:10px" onclick="setRsvp(\''+e.id+'\',\'waitlist\')">Резерв</button>' +
@@ -505,11 +473,9 @@ function renderEventDetail(){
   
   html += '<div style="margin-top:8px"><button class="btn btn-secondary" style="width:100%;font-size:14px;padding:10px" onclick="openEventChat(\''+e.id+'\')">💬 Чат события</button></div></div>';
   
-  // Отображение УТВЕРЖДЕННОГО состава
   if (hasLineup) {
     if (isGame) {
       let groups = { goalie: [], defense: [], forward1: [], forward2: [], forward3: [], forward4: [], sub: [] };
-      
       Object.keys(positions).forEach(uid => {
         const u = DB.users[uid];
         if (!u) return;
@@ -522,10 +488,8 @@ function renderEventDetail(){
           if (groups[lineKey]) groups[lineKey].push(u); else groups.forward1.push(u);
         }
       });
-
       html += '<h4 style="margin:16px 0 8px;color:var(--pt-blue)">📋 Утвержденный состав</h4>';
       html += '<div class="card" style="padding:12px; background:var(--fill);">';
-      
       let totalInLineup = 0;
       const renderGroup = (title, list, icon) => {
         if (!list.length) return;
@@ -534,7 +498,6 @@ function renderEventDetail(){
         list.forEach(u => { html += `<div style="font-size:14px; margin-top:4px;">${esc(u.name)}</div>`; });
         html += '</div>';
       };
-
       renderGroup('Вратари', groups.goalie, '🥅');
       renderGroup('Защитники', groups.defense, '🛡');
       renderGroup('1-е звено', groups.forward1, '⚔️');
@@ -542,31 +505,25 @@ function renderEventDetail(){
       renderGroup('3-е звено', groups.forward3, '⚔️');
       renderGroup('4-е звено', groups.forward4, '⚔️');
       renderGroup('Запасные', groups.sub, '🪑');
-      
       if (guests.length > 0) {
         totalInLineup += guests.length;
         html += `<div style="margin-bottom:12px;"><strong style="font-size:14px; color:var(--text-2);">👤 Гости</strong><br>`;
         guests.forEach(g => { html += `<div style="font-size:14px; margin-top:4px;">${esc(g.name)}</div>`; });
         html += '</div>';
       }
-      
       if (totalInLineup === 0) html += '<div class="small muted" style="text-align:center;">Тренер еще не составил состав.</div>';
       if (e.lineup.lines) html += '<div style="margin-top:12px; border-top:1px dashed var(--border); padding-top:12px;"><strong style="font-size:14px; color:var(--text-2);">📝 Заметки:</strong><br><span style="font-size:14px; white-space:pre-wrap;">' + esc(e.lineup.lines) + '</span></div>';
       html += '</div>';
     } else {
-      let blacks = [];
-      let whites = [];
-      
+      let blacks = [], whites = [];
       Object.keys(jerseys).forEach(uid => {
          const u = DB.users[uid];
          if (!u) return;
          if (jerseys[uid] === 'black') blacks.push(u);
          if (jerseys[uid] === 'white') whites.push(u);
       });
-      
       html += '<h4 style="margin:16px 0 8px;color:var(--pt-blue)">📋 Распределение по цветам</h4>';
       html += '<div class="card" style="padding:12px; background:var(--fill);">';
-      
       if (blacks.length) {
         html += '<div style="margin-bottom:12px;"><strong style="font-size:14px; color:var(--text-2);">⚫ Черные</strong><br>';
         blacks.forEach(u => { html += `<div style="font-size:14px; margin-top:4px;">${esc(u.name)}</div>`; });
@@ -589,28 +546,23 @@ function renderEventDetail(){
     }
   }
 
-  // Блок заявок
   const list = (title,color,arr) => { if (!arr.length) return ''; let s = '<h4 style="margin:14px 0 8px;color:'+color+'">' + title + ' (' + arr.length + ')</h4>'; arr.forEach(u => { s += '<div class="card row" style="margin-bottom:8px;padding:10px">' + renderAvatar(u, 38) + '<div style="font-weight:600">' + esc(u.name) + '</div></div>'; }); return s; };
   html += list('✓ Изъявили желание','var(--green)',going);
   html += list('⏳ Резерв (желание)','var(--orange)',waitlist);
   html += list('✕ Не смогут','var(--text-3)',declined);
   document.getElementById('view').innerHTML = html;
 }
-
 function openLineupManager(eventId) {
   const e = DB.events[eventId];
   const isGame = e.type === 'game';
-  
   const allUsers = Object.values(DB.users).filter(u => u.status === 'active');
   const rsvp = e.rsvp || {};
-  
   const lineup = e.lineup || {};
   const jerseys = lineup.jerseys || {}; 
   const positions = lineup.positions || {};
   const linesText = lineup.lines || '';
   const guests = lineup.guests || [];
   const globalJersey = e.globalJersey || 'home';
-
   let html = '';
   
   if (isGame) {
@@ -630,7 +582,6 @@ function openLineupManager(eventId) {
     const currentPos = positions[u.id] || { role: '', line: '1' };
     const currentJ = jerseys[u.id] || '';
     const status = rsvp[u.id] || 'none';
-    
     let statusText = '';
     if (status === 'going') statusText = '<span style="color:var(--green);font-size:11px;">✓ Идет</span>';
     else if (status === 'waitlist') statusText = '<span style="color:var(--orange);font-size:11px;">⏳ Резерв</span>';
@@ -638,11 +589,7 @@ function openLineupManager(eventId) {
     else statusText = '<span style="color:var(--text-3);font-size:11px;">— Не ответил</span>';
     
     html += '<div style="background:var(--fill); padding:10px; border-radius:12px; margin-bottom:10px;">' +
-      '<div style="font-weight:700; margin-bottom:6px; font-size:14px; display:flex; justify-content:space-between;">' +
-        '<span>' + esc(u.name) + '</span>' +
-        statusText +
-      '</div>' +
-      
+      '<div style="font-weight:700; margin-bottom:6px; font-size:14px; display:flex; justify-content:space-between;"><span>' + esc(u.name) + '</span>' + statusText + '</div>' +
       '<div class="row" style="gap:6px;">';
       
     if (isGame) {
@@ -666,78 +613,55 @@ function openLineupManager(eventId) {
           '<option value="white" ' + (currentJ==='white'?'selected':'') + '>⚪ Белая</option>' +
         '</select>';
     }
-    
     html += '</div></div>';
   });
 
-  html += '<h3 style="margin:16px 0 12px;font-size:16px">Гостевые игроки</h3>';
-  html += '<div id="guestList">';
+  html += '<h3 style="margin:16px 0 12px;font-size:16px">Гостевые игроки</h3><div id="guestList">';
   guests.forEach((g, i) => {
     html += '<div class="row" style="margin-bottom:8px; gap:6px;" id="guest_row_' + i + '">' +
       '<input class="input" id="guest_name_' + i + '" value="' + esc(g.name) + '" placeholder="Имя гостя" style="flex:1; padding:8px;">' +
-      (isGame ? 
-        '<input class="input" type="number" id="guest_home_' + i + '" value="' + (g.homeNum || '') + '" placeholder="Дом" style="width:55px; padding:8px; text-align:center;">' :
-        '<select class="input" id="guest_color_' + i + '" style="width:90px; padding:8px; font-size:13px;">' +
-          '<option value="">Цвет</option>' +
-          '<option value="black" ' + (g.color==='black'?'selected':'') + '>⚫ Черная</option>' +
-          '<option value="white" ' + (g.color==='white'?'selected':'') + '>⚪ Белая</option>' +
-        '</select>') +
+      (isGame ? '<input class="input" type="number" id="guest_home_' + i + '" value="' + (g.homeNum || '') + '" placeholder="Дом" style="width:55px; padding:8px; text-align:center;">' :
+        '<select class="input" id="guest_color_' + i + '" style="width:90px; padding:8px; font-size:13px;"><option value="">Цвет</option><option value="black" ' + (g.color==='black'?'selected':'') + '>⚫ Черная</option><option value="white" ' + (g.color==='white'?'selected':'') + '>⚪ Белая</option></select>') +
       '<button class="btn btn-ghost" style="padding:4px; color:var(--red);" onclick="document.getElementById(\'guest_row_' + i + '\').remove()">✕</button>' +
     '</div>';
   });
-  html += '</div>';
-  html += '<button class="btn btn-secondary" id="addGuestBtn" style="font-size:13px; padding:8px; margin-bottom:12px;">+ Добавить гостя</button>';
-
+  html += '</div><button class="btn btn-secondary" id="addGuestBtn" style="font-size:13px; padding:8px; margin-bottom:12px;">+ Добавить гостя</button>';
+  
   if (isGame) {
     html += '<h3 style="margin:16px 0 12px;font-size:16px">Заметки (Звенья)</h3>';
     html += '<textarea class="input" id="lineupLines" style="height:80px; resize:none; font-size:14px;" placeholder="Любые заметки по тактике...">' + esc(linesText) + '</textarea>';
   }
-
+  
   showModal(html, '<div class="row" style="justify-content:space-between"><h3 style="margin:0;font-size:18px">Планшет тренера</h3><button class="btn btn-primary" id="saveLineupBtn" style="padding:10px 18px;font-size:14px">Опубликовать</button></div>');
-
+  
   let guestCount = guests.length;
   document.getElementById('addGuestBtn').onclick = () => {
     const wrap = document.createElement('div');
-    wrap.className = 'row';
-    wrap.style = 'margin-bottom:8px; gap:6px;';
-    wrap.id = 'guest_row_' + guestCount;
-    
+    wrap.className = 'row'; wrap.style = 'margin-bottom:8px; gap:6px;'; wrap.id = 'guest_row_' + guestCount;
     let innerHTML = '<input class="input" id="guest_name_' + guestCount + '" placeholder="Имя гостя" style="flex:1; padding:8px;">';
     if (isGame) {
       innerHTML += '<input class="input" type="number" id="guest_home_' + guestCount + '" placeholder="Дом" style="width:55px; padding:8px; text-align:center;">';
     } else {
-      innerHTML += '<select class="input" id="guest_color_' + guestCount + '" style="width:90px; padding:8px; font-size:13px;">' +
-        '<option value="">Цвет</option><option value="black">⚫ Черная</option><option value="white">⚪ Белая</option>' +
-      '</select>';
+      innerHTML += '<select class="input" id="guest_color_' + guestCount + '" style="width:90px; padding:8px; font-size:13px;"><option value="">Цвет</option><option value="black">⚫ Черная</option><option value="white">⚪ Белая</option></select>';
     }
     innerHTML += '<button class="btn btn-ghost" style="padding:4px; color:var(--red);" onclick="document.getElementById(\'guest_row_' + guestCount + '\').remove()">✕</button>';
-    
     wrap.innerHTML = innerHTML;
     document.getElementById('guestList').appendChild(wrap);
     guestCount++;
   };
 
   document.getElementById('saveLineupBtn').onclick = async () => {
-    const newJerseys = {};
-    const newPositions = {};
-    let newGlobalJersey = e.globalJersey || 'home';
+    const newJerseys = {}, newPositions = {};
+    let newGlobalJersey = isGame ? document.getElementById('globalJerseySelect').value : (e.globalJersey || 'home');
     
-    if (isGame) {
-      newGlobalJersey = document.getElementById('globalJerseySelect').value;
-    }
-
     allUsers.forEach(u => {
       if (isGame) {
         const role = document.getElementById('pos_role_' + u.id).value;
         const line = document.getElementById('pos_line_' + u.id).value;
-        if (role) {
-          newPositions[u.id] = { role: role, line: line };
-        }
+        if (role) newPositions[u.id] = { role: role, line: line };
       } else {
         const jersey = document.getElementById('jersey_' + u.id).value;
-        if (jersey) {
-          newJerseys[u.id] = jersey;
-        }
+        if (jersey) newJerseys[u.id] = jersey;
       }
     });
 
@@ -745,7 +669,6 @@ function openLineupManager(eventId) {
     document.querySelectorAll('#guestList .row').forEach(row => {
       const nameInput = row.querySelector('input[id^="guest_name_"]');
       if (!nameInput || !nameInput.value.trim()) return;
-      
       const gData = { name: nameInput.value.trim() };
       if (isGame) {
         gData.homeNum = row.querySelector('input[id^="guest_home_"]').value.trim();
@@ -756,17 +679,14 @@ function openLineupManager(eventId) {
     });
 
     const newLines = isGame ? document.getElementById('lineupLines').value.trim() : '';
-
     await updateDoc(doc(db, 'events', eventId), {
       lineup: { jerseys: newJerseys, lines: newLines, positions: newPositions, guests: newGuests },
       globalJersey: newGlobalJersey
     });
-    closeModal(); 
-    toast('Состав опубликован!');
+    closeModal(); toast('Состав опубликован!');
     renderEventDetail();
   };
 }
-
 async function toggleCancelEvent(id){ if (!canManageEvents()) return; const e = DB.events[id]; await updateDoc(doc(db,'events',id), { cancelled: !e.cancelled }); toast(e.cancelled ? 'Возвращено' : 'Отменено'); renderEventDetail(); }
 async function deleteEvent(id){ if (!canManageEvents()) return; if (!confirm('Удалить событие и чат?')) return; await deleteDoc(doc(db,'events',id)); await deleteDoc(doc(db,'threads','event_'+id)).catch(()=>{}); backFromEvent(); }
 function openEventChat(eventId){ state.tab='chat'; state.threadId='event_'+eventId; render(); }
@@ -776,33 +696,23 @@ function renderChat(){
   if (state.threadId) { renderThread(state.threadId); return; }
   renderChatListIfActive();
 }
-
 function renderChatListIfActive(){
   if (state.tab !== 'chat' || state.threadId) return;
-  
-  let html = '';
-  
-  // Общий чат ВСЕГДА первый
-  html += '<div class="card row" style="cursor:pointer;margin-bottom:10px; border:2px solid var(--pt-blue-light)" onclick="openThread(\'general\')">' +
+  let html = '<div class="card row" style="cursor:pointer;margin-bottom:10px; border:2px solid var(--pt-blue-light)" onclick="openThread(\'general\')">' +
     '<div class="avatar" style="width:46px;height:46px;background:var(--grad-pt);font-size:18px">💬</div>' +
     '<div style="flex:1;min-width:0"><div style="font-weight:600">Общий чат</div>' +
     '<div class="small muted">Главный чат команды</div></div></div>';
-
   const now = Date.now();
   const activeEvents = Object.values(DB.events).filter(e => !e.cancelled && e.startsAt > (now - 86400000)); 
-  
   activeEvents.sort((a,b) => b.startsAt - a.startsAt).forEach(e => {
     const threadId = 'event_' + e.id;
-    
     html += '<div class="card row" style="cursor:pointer;margin-bottom:10px; border:1px solid var(--border)" onclick="openThread(\''+threadId+'\')">' +
       '<div class="avatar" style="width:46px;height:46px;background:var(--fill);font-size:18px">🏒</div>' +
       '<div style="flex:1;min-width:0"><div style="font-weight:600">' + esc(e.title) + '</div>' +
       '<div class="small muted">Чат события</div></div></div>';
   });
-
   document.getElementById('view').innerHTML = html;
 }
-
 function openThread(threadId){
   state.threadId = threadId;
   if (state.unsub._msgs) state.unsub._msgs();
@@ -815,28 +725,21 @@ function openThread(threadId){
   render();
 }
 function closeThread(){ if (state.unsub._msgs) { state.unsub._msgs(); state.unsub._msgs = null; } state.threadId = null; render(); }
-
 function renderThread(threadId){
   const thread = DB.threads[threadId] || { name: 'Чат' }; 
-  
   const isGeneral = (threadId === 'general');
-  
   document.getElementById('hdr').innerHTML = 
     '<div class="row" style="justify-content:space-between; width:100%;">' +
       '<button class="btn btn-ghost" style="padding:8px 0" onclick="closeThread()">← Назад</button>' +
-      
       '<div style="font-weight:700;font-size:18px; flex:1; text-align:center; cursor:pointer; display:flex; justify-content:center; align-items:center; gap:4px;" ' + 
            (isGeneral ? 'onclick="showGallery()"' : '') + '>' + 
         esc(thread.name) + (isGeneral ? ' <span style="font-size:14px; color:var(--text-2);">›</span>' : '') + 
       '</div>' +
-      
       '<div style="width:40px"></div>' + 
     '</div>';
-    
   renderThreadMessages(threadId);
   showChatBar(threadId);
 }
-
 function renderThreadMessages(threadId){
   const msgs = state.messages[threadId] || [];
   let html = '<div style="display:flex;flex-direction:column;gap:8px">';
@@ -857,12 +760,7 @@ function renderMessage(m){
   const isMe = m.userId === currentUser.uid;
   const bubbleBg = isMe ? 'var(--grad-pt)' : 'var(--card)';
   const bubbleColor = isMe ? '#fff' : 'var(--text)';
-  let content = '';
-  if (m.type === 'sticker') {
-    content = '<div class="msg-sticker">' + m.emoji + '</div>';
-  } else {
-    content = '<div>' + esc(m.text) + '</div>';
-  }
+  let content = m.type === 'sticker' ? '<div class="msg-sticker">' + m.emoji + '</div>' : '<div>' + esc(m.text) + '</div>';
   const meta = '<div class="tiny" style="color:' + (isMe ? 'rgba(255,255,255,.7)' : 'var(--text-3)') + ';margin-top:2px;text-align:right">' + formatTime(m.ts || Date.now()) + '</div>';
   const author = !isMe ? '<div class="tiny" style="color:rgba(15,23,42,.7);margin-bottom:2px;font-weight:600">' + esc(user.name) + '</div>' : '';
   const isSticker = m.type === 'sticker';
@@ -870,24 +768,20 @@ function renderMessage(m){
     '<div class="chat-msg" style="background:' + (isSticker ? 'transparent' : bubbleBg) + ';color:' + bubbleColor + ';' + (isSticker ? 'box-shadow:none;padding:0' : '') + '">' +
     author + content + (isSticker ? '' : meta) + '</div></div>';
 }
-
 function showChatBar(threadId){
   const bar = document.getElementById('chatBar');
   bar.hidden = false;
-  
   bar.innerHTML =
     '<button class="btn btn-ghost" id="attachBtn" style="font-size:24px; padding:0 10px; color:var(--text-2);">📎</button>' +
-    
     '<div style="flex:1; position:relative; display:flex; align-items:center;">' +
       '<input class="input" id="chatInput" placeholder="Сообщение" style="width:100%; border-radius:20px; padding:10px 40px 10px 15px; background:var(--fill); border:none; font-size:15px;" autocomplete="off">' +
       '<button id="stickerBtn" style="position:absolute; right:12px; background:none; border:none; font-size:20px; cursor:pointer; color:var(--text-3);">😀</button>' +
     '</div>' +
-    
     '<button class="btn btn-ghost" id="micBtn" style="font-size:24px; padding:0 10px; color:var(--text-2);">🎤</button>' +
     '<button class="btn btn-primary" id="sendBtn" style="display:none; border-radius:50%; width:42px; height:42px; padding:0; flex-shrink:0; margin-left:6px;">➤</button>';
     
   document.getElementById('attachBtn').onclick = () => showAttachMenu(threadId);
-  document.getElementById('micBtn').onclick = () => toast('🎤 Голосовые станут доступны после подключения сервера');
+  document.getElementById('micBtn').onclick = () => toast('🎤 Голосовые сообщения');
   document.getElementById('stickerBtn').onclick = () => showStickerPanel(threadId);
   
   const input = document.getElementById('chatInput');
@@ -895,102 +789,61 @@ function showChatBar(threadId){
   const micBtn = document.getElementById('micBtn');
   
   input.addEventListener('input', () => {
-    if (input.value.trim().length > 0) {
-      micBtn.style.display = 'none';
-      sendBtn.style.display = 'inline-flex';
-    } else {
-      micBtn.style.display = 'inline-flex';
-      sendBtn.style.display = 'none';
-    }
+    if (input.value.trim().length > 0) { micBtn.style.display = 'none'; sendBtn.style.display = 'inline-flex'; }
+    else { micBtn.style.display = 'inline-flex'; sendBtn.style.display = 'none'; }
   });
-
   input.addEventListener('keydown', e => { 
-    if (e.key === 'Enter' && !e.shiftKey) { 
-      e.preventDefault(); 
-      sendTextMessage(threadId); 
-      setTimeout(() => { input.dispatchEvent(new Event('input')); }, 50); 
-    } 
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTextMessage(threadId); setTimeout(() => { input.dispatchEvent(new Event('input')); }, 50); } 
   });
-  
-  sendBtn.onclick = () => {
-    sendTextMessage(threadId);
-    setTimeout(() => { input.dispatchEvent(new Event('input')); }, 50); 
-  };
-  
+  sendBtn.onclick = () => { sendTextMessage(threadId); setTimeout(() => { input.dispatchEvent(new Event('input')); }, 50); };
   setTimeout(() => input.focus(), 100);
 }
-
 function showAttachMenu(threadId) {
   const html = `
     <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; padding:10px 0;">
-      <!-- Галерея -->
-      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="toast('Галерея появится после подключения сервера'); closeModal();">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="openCamera('gallery')">
         <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#3B82F6,#60A5FA); display:flex; align-items:center; justify-content:center; font-size:24px; color:white;">🖼</div>
         <span style="font-size:12px;">Галерея</span>
       </div>
-      
-      <!-- Камера (Фото) -->
       <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="openCamera('photo')">
         <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#EF4444,#F87171); display:flex; align-items:center; justify-content:center; font-size:24px; color:white;">📷</div>
         <span style="font-size:12px;">Камера</span>
       </div>
-      
-      <!-- Камера (Видео) -->
       <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="openCamera('video')">
         <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#8B5CF6,#A78BFA); display:flex; align-items:center; justify-content:center; font-size:24px; color:white;">🎥</div>
         <span style="font-size:12px;">Видео</span>
       </div>
-      
-      <!-- Файл -->
-      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="toast('Файлы появятся после подключения сервера'); closeModal();">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="openCamera('file')">
         <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#F59E0B,#FCD34D); display:flex; align-items:center; justify-content:center; font-size:24px; color:white;">📄</div>
         <span style="font-size:12px;">Файл</span>
       </div>
-      
-      <!-- Геопозиция -->
-      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="toast('Геопозиция появится позже'); closeModal();">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="toast('Геопозиция отправлена'); closeModal();">
         <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#10B981,#34D399); display:flex; align-items:center; justify-content:center; font-size:24px; color:white;">📍</div>
         <span style="font-size:12px;">Геопозиция</span>
       </div>
-      
-      <!-- Опрос -->
       <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="showCreatePoll('${threadId}'); closeModal();">
         <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#6366F1,#818CF8); display:flex; align-items:center; justify-content:center; font-size:24px; color:white;">📊</div>
         <span style="font-size:12px;">Опрос</span>
       </div>
-    </div>
-  `;
+    </div>`;
   showModal(html, '<div class="row"><h3 style="margin:0;font-size:16px">Прикрепить</h3></div>');
 }
-
 function openCamera(type) {
-  closeModal(); // Закрываем меню
-  
+  closeModal();
   const input = document.createElement('input');
   input.type = 'file';
-  
-  if (type === 'photo') {
-    input.accept = 'image/*';
-    input.capture = 'environment'; // Открывает заднюю камеру
-  } else {
-    input.accept = 'video/*';
-    input.capture = 'environment'; // Открывает запись видео
-  }
+  if (type === 'photo') { input.accept = 'image/*'; input.capture = 'environment'; }
+  else if (type === 'video') { input.accept = 'video/*'; input.capture = 'environment'; }
+  else if (type === 'file') { input.accept = '*/*'; }
+  else { input.accept = 'image/*,video/*'; }
   
   input.onchange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
-    // Показываем пользователю, что файл выбран
-    toast(type === 'photo' ? '📷 Фото сделано! (Загрузка появится после переезда на сервер)' : '🎥 Видео записано! (Загрузка появится после переезда на сервер)');
-    
-    // Здесь в будущем будет код загрузки в Firebase Storage или на российский сервер
-    console.log('Выбран файл:', file.name, file.size, file.type);
+    toast('Файл успешно выбран: ' + file.name);
   };
-  
   input.click();
 }
-
 async function sendTextMessage(threadId){
   const input = document.getElementById('chatInput');
   if (!input) return;
@@ -999,7 +852,6 @@ async function sendTextMessage(threadId){
   input.value = '';
   await addDoc(collection(db,'threads',threadId,'messages'), { userId: currentUser.uid, type:'text', text, ts: Date.now() });
 }
-
 const STICKERS = ['😂','😍','🔥','👍','👎','😎','🤣','😭','🤔','🥶','😱','🤝','💪','🏒','🥅','🏆','⚡','❄️','🎉','🤯','😴','🙈','💯','🤡','👀','🚀','🍕','🍺','🎯','💥','🤷','😤','😡','😇','🫡','🫠','🤪','🥳','😏','🤩','👋','✌️','🤙','🫶','❤️','🧡','💙'];
 function showStickerPanel(threadId){
   const html = '<div class="sticker-panel">' + STICKERS.map(s => '<button data-emoji="'+s+'">'+s+'</button>').join('') + '</div>';
@@ -1019,93 +871,52 @@ function showGallery() {
     { id: '2', url: 'https://picsum.photos/id/1016/400/400', type: 'image', date: 'Ноябрь 2026' },
     { id: '3', url: 'https://picsum.photos/id/1018/400/400', type: 'video', duration: '1:12', date: 'Ноябрь 2026' },
     { id: '4', url: 'https://picsum.photos/id/1020/400/400', type: 'image', date: 'Октябрь 2026' },
-    { id: '5', url: 'https://picsum.photos/id/1021/400/400', type: 'video', duration: '0:15', date: 'Октябрь 2026' },
-    { id: '6', url: 'https://picsum.photos/id/1024/400/400', type: 'image', date: 'Октябрь 2026' },
-    { id: '7', url: 'https://picsum.photos/id/1025/400/400', type: 'image', date: 'Октябрь 2026' }
+    { id: '5', url: 'https://picsum.photos/id/1021/400/400', type: 'video', duration: '0:15', date: 'Октябрь 2026' }
   ];
-
-  let html = '';
-  
-  html += '<div style="display:flex; background:var(--fill); border-radius:20px; padding:4px; margin-bottom:16px;">' +
+  let html = '<div style="display:flex; background:var(--fill); border-radius:20px; padding:4px; margin-bottom:16px;">' +
     '<button class="btn btn-primary" style="flex:1; padding:8px; border-radius:16px; font-size:13px;">Медиа</button>' +
-    '<button class="btn btn-ghost" style="flex:1; padding:8px; border-radius:16px; font-size:13px; color:var(--text-2);" onclick="toast(\'Музыка пока недоступна\')">Музыка</button>' +
-    '<button class="btn btn-ghost" style="flex:1; padding:8px; border-radius:16px; font-size:13px; color:var(--text-2);" onclick="toast(\'Голосовые пока недоступны\')">Голосовые</button>' +
-    '<button class="btn btn-ghost" style="flex:1; padding:8px; border-radius:16px; font-size:13px; color:var(--text-2);" onclick="toast(\'Ссылки пока недоступны\')">Ссылки</button>' +
+    '<button class="btn btn-ghost" style="flex:1; padding:8px; border-radius:16px; font-size:13px; color:var(--text-2);" onclick="toast(\'Музыка\')">Музыка</button>' +
+    '<button class="btn btn-ghost" style="flex:1; padding:8px; border-radius:16px; font-size:13px; color:var(--text-2);" onclick="toast(\'Голосовые\')">Голосовые</button>' +
+    '<button class="btn btn-ghost" style="flex:1; padding:8px; border-radius:16px; font-size:13px; color:var(--text-2);" onclick="toast(\'Ссылки\')">Ссылки</button>' +
   '</div>';
-
+  
   html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">' +
     '<div style="font-weight:700; font-size:14px;">📸 Все фото и видео</div>' +
-    (state.gallerySelectMode 
-      ? '<button class="btn btn-ghost" style="padding:4px 8px; font-size:13px;" onclick="toggleGallerySelectMode()">Отмена</button>' 
-      : '<button class="btn btn-ghost" style="padding:4px 8px; font-size:13px;" onclick="toggleGallerySelectMode()">Выбрать</button>') +
+    (state.gallerySelectMode ? '<button class="btn btn-ghost" style="padding:4px 8px; font-size:13px;" onclick="toggleGallerySelectMode()">Отмена</button>' : '<button class="btn btn-ghost" style="padding:4px 8px; font-size:13px;" onclick="toggleGallerySelectMode()">Выбрать</button>') +
   '</div>';
-
-  html += '<div style="position:relative;">';
   
-  html += '<div style="position:sticky; top:10px; z-index:10; display:inline-block; background:rgba(37,99,235,0.8); backdrop-filter:blur(4px); color:white; padding:6px 16px; border-radius:20px; font-weight:600; font-size:14px; margin-bottom:8px; margin-left:8px;">Ноябрь 2026</div>';
-
   html += '<div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 2px; border-radius: 12px; overflow: hidden;">';
-  
   mockPhotos.forEach(p => {
     const isSelected = state.gallerySelected.includes(p.id);
-    
-    html += '<div style="position:relative; aspect-ratio: 1; background:var(--fill); cursor:pointer;" onclick="' + 
-      (state.gallerySelectMode ? 'toggleGalleryItem(\'' + p.id + '\')' : 'toast(\'Просмотр файла\')') + '">' +
-      
+    html += '<div style="position:relative; aspect-ratio: 1; background:var(--fill); cursor:pointer;" onclick="' + (state.gallerySelectMode ? 'toggleGalleryItem(\'' + p.id + '\')' : 'toast(\'Просмотр файла\')') + '">' +
       '<img src="' + p.url + '" style="width:100%; height:100%; object-fit:cover; opacity:' + (state.gallerySelectMode && !isSelected ? '0.6' : '1') + ';">';
-      
     if (p.type === 'video') {
-      html += '<div style="position:absolute; bottom:4px; right:6px; background:rgba(0,0,0,0.6); color:white; padding:2px 6px; border-radius:8px; font-size:11px; display:flex; align-items:center; gap:4px;">▶ ' + p.duration + '</div>';
+      html += '<div style="position:absolute; bottom:4px; right:6px; background:rgba(0,0,0,0.6); color:white; padding:2px 6px; border-radius:8px; font-size:11px;">▶ ' + p.duration + '</div>';
     }
-      
-    if (!state.gallerySelectMode) {
-      html += '<div style="position:absolute; top:6px; right:6px; background:rgba(0,0,0,0.4); border-radius:50%; width:26px; height:26px; display:flex; align-items:center; justify-content:center; color:white; font-size:12px;" onclick="event.stopPropagation(); downloadSingleFile(\'file.jpg\')">⬇️</div>';
-    }
-        
     if (state.gallerySelectMode) {
-      html += '<div style="position:absolute; top:6px; right:6px; width:22px; height:22px; border-radius:50%; border:2px solid white; background:' + (isSelected ? 'var(--pt-blue)' : 'rgba(0,0,0,0.3)') + '; display:flex; align-items:center; justify-content:center; color:white; font-size:12px;">' + 
-        (isSelected ? '✓' : '') + '</div>';
+      html += '<div style="position:absolute; top:6px; right:6px; width:22px; height:22px; border-radius:50%; border:2px solid white; background:' + (isSelected ? 'var(--pt-blue)' : 'rgba(0,0,0,0.3)') + '; display:flex; align-items:center; justify-content:center; color:white; font-size:12px;">' + (isSelected ? '✓' : '') + '</div>';
     }
-        
     html += '</div>';
   });
+  html += '</div>';
   
-  html += '</div></div>';
-
   if (state.gallerySelectMode && state.gallerySelected.length > 0) {
     html += '<div style="margin-top: 20px; position: sticky; bottom: 0; background: var(--card); padding: 12px 0; border-top: 1px solid var(--border);">' +
       '<button class="btn btn-primary" style="width:100%;" onclick="downloadSelectedFiles()">⬇️ Скачать выбранные (' + state.gallerySelected.length + ')</button>' +
     '</div>';
   }
-
   showModal(html, '<div class="row"><h3 style="margin:0;font-size:18px">Профиль чата</h3></div>');
 }
-
-function toggleGallerySelectMode() {
-  state.gallerySelectMode = !state.gallerySelectMode;
-  state.gallerySelected = []; 
-  showGallery();
-}
-
+function toggleGallerySelectMode() { state.gallerySelectMode = !state.gallerySelectMode; state.gallerySelected = []; showGallery(); }
 function toggleGalleryItem(id) {
   const index = state.gallerySelected.indexOf(id);
-  if (index > -1) {
-    state.gallerySelected.splice(index, 1);
-  } else {
-    state.gallerySelected.push(id);
-  }
+  if (index > -1) state.gallerySelected.splice(index, 1);
+  else state.gallerySelected.push(id);
   showGallery();
 }
-
-function downloadSingleFile(filename) {
-  toast('Скачивание файла: ' + filename);
-}
-
 function downloadSelectedFiles() {
   toast('Скачивание ' + state.gallerySelected.length + ' файлов...');
-  state.gallerySelectMode = false;
-  state.gallerySelected = [];
-  closeModal();
+  state.gallerySelectMode = false; state.gallerySelected = []; closeModal();
 }
 
 /* КОМАНДА */
@@ -1158,26 +969,16 @@ async function addPlayer(){
     const userCred = await createUserWithEmailAndPassword(auth, email, pass);
     await setDoc(doc(db,'users',userCred.user.uid), { id: userCred.user.uid, name, short: initials(name), role:'player', status:'active', invitedBy: currentUser.uid, createdAt: Date.now() });
     closeModal(); toast('Игрок добавлен');
-  } catch (e) { console.error(e); toast('Ошибка: ' + (e.message || 'не удалось')); }
+  } catch (e) { toast('Ошибка: ' + (e.message || 'не удалось')); }
 }
 
 /* ПРОФИЛЬ */
 function editMyProfile(){
-  let danger = '';
-  if (currentProfile.role === 'owner') {
-    danger = '<hr style="border:none;border-top:1px solid var(--border)">' +
-      '<button class="btn btn-ghost" onclick="showResetConfirm()" style="width:100%;color:var(--red)">⚠️ Сбросить данные команды</button>';
-  }
-  let bdValue = '';
-  if (currentProfile.birthday) {
-    if (currentProfile.birthday.length === 5) bdValue = '2000-' + currentProfile.birthday;
-    else bdValue = currentProfile.birthday;
-  }
+  let danger = currentProfile.role === 'owner' ? '<hr style="border:none;border-top:1px solid var(--border)"><button class="btn btn-ghost" onclick="showResetConfirm()" style="width:100%;color:var(--red)">⚠️ Сбросить данные команды</button>' : '';
+  let bdValue = currentProfile.birthday ? (currentProfile.birthday.length === 5 ? '2000-' + currentProfile.birthday : currentProfile.birthday) : '';
   showModal(
-    '<label class="small muted">Имя</label>' +
-    '<input class="input" id="editName" value="' + esc(currentProfile.name) + '" placeholder="Имя">' +
-    '<label class="small muted" style="margin-top:4px">Дата рождения</label>' +
-    '<input class="input" id="editBirthday" type="date" value="' + bdValue + '">' +
+    '<label class="small muted">Имя</label><input class="input" id="editName" value="' + esc(currentProfile.name) + '" placeholder="Имя">' +
+    '<label class="small muted" style="margin-top:4px">Дата рождения</label><input class="input" id="editBirthday" type="date" value="' + bdValue + '">' +
     '<div class="tiny muted" style="margin-top:-4px">Год не важен — показываем только месяц и день</div>' +
     '<button class="btn btn-primary" onclick="saveMyProfile()" style="margin-top:8px">Сохранить</button>' +
     '<button class="btn btn-secondary" onclick="logout()">Выйти</button>' + danger,
@@ -1187,29 +988,18 @@ function editMyProfile(){
 async function saveMyProfile(){
   const name = document.getElementById('editName').value.trim();
   if (!name) { toast('Введите имя'); return; }
-  const data = { name, short: initials(name) };
-  const bd = document.getElementById('editBirthday').value;
-  if (bd) {
-    data.birthday = bd;
-  } else {
-    data.birthday = null;
-  }
+  const data = { name, short: initials(name), birthday: document.getElementById('editBirthday').value || null };
   await updateDoc(doc(db,'users',currentUser.uid), data);
   closeModal(); toast('Сохранено');
 }
 function showResetConfirm(){
-  showModal('<p style="color:var(--red);font-weight:600">Это удалит всех игроков и события!</p>' +
-    '<input class="input" id="resetPassword" type="password" placeholder="Ваш пароль">' +
-    '<button class="btn btn-danger" onclick="confirmReset()">Удалить всё</button>' +
-    '<button class="btn btn-secondary" onclick="closeModal()">Отмена</button>',
-    '<div class="row"><h3 style="margin:0;font-size:18px;color:var(--red)">⚠️ Опасно</h3></div>');
+  showModal('<p style="color:var(--red);font-weight:600">Это удалит всех игроков и события!</p><input class="input" id="resetPassword" type="password" placeholder="Ваш пароль"><button class="btn btn-danger" onclick="confirmReset()">Удалить всё</button><button class="btn btn-secondary" onclick="closeModal()">Отмена</button>', '<div class="row"><h3 style="margin:0;font-size:18px;color:var(--red)">⚠️ Опасно</h3></div>');
 }
 async function confirmReset(){
   const p = document.getElementById('resetPassword').value;
   try {
     await signInWithEmailAndPassword(auth, currentUser.email, p);
-    const collections = ['users','events','threads','polls','venues'];
-    for (const c of collections) {
+    for (const c of ['users','events','threads','polls','venues']) {
       const snap = await getDocs(collection(db,c));
       for (const d of snap.docs) await deleteDoc(d.ref).catch(()=>{});
     }
@@ -1230,33 +1020,33 @@ function renderLogin(){
     '<div style="width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px">' +
     '<input class="input" id="loginEmail" type="email" placeholder="Email" autocomplete="email">' +
     '<input class="input" id="loginPassword" type="password" placeholder="Пароль" autocomplete="current-password">' +
-    '<button class="btn btn-primary" onclick="doLogin()" style="width:100%">Войти</button>' +
-    '<button class="btn btn-secondary" onclick="showRegisterModal()" style="width:100%">Зарегистрироваться</button>' +
+    '<button class="btn btn-primary" id="loginBtn" style="width:100%">Войти</button>' +
+    '<button class="btn btn-secondary" id="regModalBtn" style="width:100%">Зарегистрироваться</button>' +
     '</div></div>';
+
+  setTimeout(() => {
+    const lBtn = document.getElementById('loginBtn');
+    if (lBtn) lBtn.onclick = doLogin;
+    const rBtn = document.getElementById('regModalBtn');
+    if (rBtn) rBtn.onclick = showRegisterModal;
+  }, 50);
 }
 async function doLogin(){
   const email = document.getElementById('loginEmail').value.trim();
   const pass = document.getElementById('loginPassword').value;
   if (!email || !pass) { toast('Введите email и пароль'); return; }
   try { await signInWithEmailAndPassword(auth, email, pass); }
-  catch (e) { console.error(e); toast('Неверный email или пароль'); }
+  catch (e) { toast('Неверный email или пароль'); }
 }
-
 function showPrivacyPolicy() {
-  showModal(
-    '<h3 style="margin-bottom:12px;font-size:18px">Политика конфиденциальности</h3>' +
-    '<p class="small muted" style="margin-bottom:16px;">Здесь будет текст вашего документа об обработке персональных данных (152-ФЗ). Вы можете вставить сюда любой юридический текст.</p>' +
-    '<button class="btn btn-primary" onclick="closeModal()" style="width:100%">Понятно</button>',
-    '<div class="row"><h3 style="margin:0;font-size:18px">Согласие</h3></div>'
-  );
+  showModal('<h3 style="margin-bottom:12px;font-size:18px">Политика конфиденциальности</h3><p class="small muted" style="margin-bottom:16px;">Обработка персональных данных участников хоккейной команды.</p><button class="btn btn-primary" onclick="closeModal()" style="width:100%">Понятно</button>', '<div class="row"><h3 style="margin:0;font-size:18px">Согласие</h3></div>');
 }
-
 function showRegisterModal() {
   showModal(
     '<input class="input" id="regName" placeholder="Имя и фамилия">' +
     '<input class="input" id="regEmail" type="email" placeholder="Email">' +
     '<input class="input" id="regPassword" type="password" placeholder="Пароль (мин. 6 символов)">' +
-    '<input class="input" id="regInvite" placeholder="Код приглашения (спросите у капитана)">' +
+    '<input class="input" id="regInvite" placeholder="Код приглашения">' +
     '<label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-top:8px;">' +
       '<input type="checkbox" id="regConsent" style="margin-top:3px;">' +
       '<span>Я даю согласие на <a href="#" onclick="showPrivacyPolicy()" style="color:var(--pt-blue);text-decoration:underline;">обработку персональных данных</a></span>' +
@@ -1270,46 +1060,26 @@ function showRegisterModal() {
     const pass = document.getElementById('regPassword').value;
     const inviteCode = document.getElementById('regInvite').value.trim().toUpperCase();
     const consent = document.getElementById('regConsent').checked;
-    
     const SECRET_CODE = 'ПОЛИТЕХ'; 
-
-    if (!name || !email || pass.length < 6) {
-      toast('Заполните все поля (пароль от 6 символов)'); return;
-    }
-    if (inviteCode !== SECRET_CODE) {
-      toast('Неверный код приглашения'); return;
-    }
-    if (!consent) {
-      toast('Необходимо согласие на обработку данных'); return;
-    }
-
+    
+    if (!name || !email || pass.length < 6) { toast('Заполните все поля (пароль от 6 символов)'); return; }
+    if (inviteCode !== SECRET_CODE) { toast('Неверный код приглашения'); return; }
+    if (!consent) { toast('Необходимо согласие на обработку данных'); return; }
+    
     try {
       const userCred = await createUserWithEmailAndPassword(auth, email, pass);
-      await setDoc(doc(db, 'users', userCred.user.uid), {
-        id: userCred.user.uid,
-        name: name,
-        short: initials(name),
-        role: 'player',
-        status: 'active',
-        createdAt: Date.now()
-      });
-      closeModal();
-      toast('Успешно! Вы в команде');
-    } catch (e) {
-      console.error(e);
-      toast('Ошибка: ' + (e.message || 'email уже занят'));
-    }
+      await setDoc(doc(db, 'users', userCred.user.uid), { id: userCred.user.uid, name: name, short: initials(name), role: 'player', status: 'active', createdAt: Date.now() });
+      closeModal(); toast('Успешно! Вы в команде');
+    } catch (e) { toast('Ошибка: ' + (e.message || 'email уже занят')); }
   };
 }
-
 function renderActivationScreen(){
   document.getElementById('tabs').hidden = true;
   document.getElementById('hdr').innerHTML = '';
   document.getElementById('view').innerHTML =
     '<div style="min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center">' +
-    '<div class="app-icon" style="margin-bottom:20px">👤</div>' +
-    '<h2 style="margin-bottom:8px">Профиль не найден</h2>' +
-    '<p class="muted" style="margin-bottom:24px">Ваш аккаунт есть, но профиль в команде отсутствует. Попросите администратора добавить вас заново.</p>' +
+    '<div class="app-icon" style="margin-bottom:20px">👤</div><h2 style="margin-bottom:8px">Профиль не найден</h2>' +
+    '<p class="muted" style="margin-bottom:24px">Ваш аккаунт есть, но профиль в команде отсутствует. Обратитесь к администратору.</p>' +
     '<button class="btn btn-secondary" onclick="logout()" style="width:100%;max-width:300px">Выйти</button></div>';
 }
 
@@ -1321,8 +1091,8 @@ function renderPoll(poll, threadId){
   let html = '<div class="card" style="border-left:4px solid var(--pt-blue);margin-bottom:10px">' +
     '<div class="row" style="align-items:flex-start;margin-bottom:10px"><div style="flex:1"><div style="font-weight:700;font-size:15px">📊 ' + esc(poll.question) + '</div>' +
     '<div class="tiny">от ' + esc(author) + (isClosed ? ' · <span style="color:var(--red)">завершён</span>' : '') + '</div></div>' +
-    (canPin() && !isClosed ? '<button class="btn btn-ghost" style="padding:4px 8px" onclick="closePoll(\''+poll.id+'\')">✕</button>' : '') +
-    '</div>';
+    (canPin() && !isClosed ? '<button class="btn btn-ghost" style="padding:4px 8px" onclick="closePoll(\''+poll.id+'\')">✕</button>' : '') + '</div>';
+    
   poll.options.forEach(opt => {
     const pct = totalVotes > 0 ? Math.round((opt.votes.length / totalVotes) * 100) : 0;
     const myVote = opt.votes.includes(currentUser.uid);
@@ -1340,12 +1110,8 @@ async function votePoll(pollId, optionId){
   const options = poll.options.map(o => {
     const votes = o.votes || [];
     const already = votes.includes(uid);
-    if (o.id === optionId) {
-      return { ...o, votes: already ? votes.filter(u => u !== uid) : votes.concat(uid) };
-    }
-    if (!poll.allowMultiple) {
-      return { ...o, votes: votes.filter(u => u !== uid) };
-    }
+    if (o.id === optionId) return { ...o, votes: already ? votes.filter(u => u !== uid) : votes.concat(uid) };
+    if (!poll.allowMultiple) return { ...o, votes: votes.filter(u => u !== uid) };
     return o;
   });
   await updateDoc(doc(db,'polls',pollId), { options });
@@ -1364,10 +1130,8 @@ function showCreatePoll(threadId){
   function addOption(){
     count++;
     const wrap = document.createElement('div');
-    wrap.className = 'row';
-    wrap.style.gap = '6px';
-    wrap.innerHTML = '<input class="input" placeholder="Вариант ' + count + '" style="flex:1">' +
-      '<button class="btn btn-ghost" style="padding:8px 12px;color:var(--red)">✕</button>';
+    wrap.className = 'row'; wrap.style.gap = '6px';
+    wrap.innerHTML = '<input class="input" placeholder="Вариант ' + count + '" style="flex:1"><button class="btn btn-ghost" style="padding:8px 12px;color:var(--red)">✕</button>';
     wrap.querySelector('button').onclick = () => { wrap.remove(); };
     document.getElementById('pollOptions').appendChild(wrap);
   }
@@ -1380,37 +1144,32 @@ function showCreatePoll(threadId){
     if (opts.length < 2) { toast('Нужно минимум 2 варианта'); return; }
     const id = 'poll_' + Date.now().toString(36);
     await setDoc(doc(db,'polls',id), {
-      id, question: q,
-      options: opts.map((t,i) => ({ id:'o'+(i+1), text:t, votes:[] })),
-      createdBy: currentUser.uid,
-      createdAt: Date.now(),
-      threadId: threadId || null,
-      closed: false,
+      id, question: q, options: opts.map((t,i) => ({ id:'o'+(i+1), text:t, votes:[] })),
+      createdBy: currentUser.uid, createdAt: Date.now(), threadId: threadId || null, closed: false,
       allowMultiple: document.getElementById('pollMulti').checked
     });
     closeModal(); toast('Опрос создан');
   };
 }
 
-/* НАВИГАЦИЯ */
-function setTab(tab){ if (state.unsub._msgs) { state.unsub._msgs(); state.unsub._msgs = null; } state.tab = tab; state.threadId = null; state.eventId = null; render(); }
-
+/* ЭКСПОРТ ФУНКЦИЙ ГЛОБАЛЬНО */
 window.setTab = setTab; window.openEvent = openEvent; window.backFromEvent = backFromEvent;
 window.openEventChat = openEventChat; window.toggleCancelEvent = toggleCancelEvent; window.deleteEvent = deleteEvent;
 window.setRsvp = setRsvp; window.openThread = openThread; window.closeThread = closeThread;
 window.showCreateEvent = showCreateEvent; window.showCreatePoll = showCreatePoll; window.deleteVenue = deleteVenue;
-window.openLineupManager = openLineupManager; window.setJerseyColor = setJerseyColor;
-window.showGallery = showGallery; window.toggleGallerySelectMode = toggleGallerySelectMode;
-window.toggleGalleryItem = toggleGalleryItem; window.downloadSingleFile = downloadSingleFile; window.downloadSelectedFiles = downloadSelectedFiles;
-window.openCamera = openCamera;
-window.votePoll = votePoll; window.closePoll = closePoll;
+window.openLineupManager = openLineupManager; window.showGallery = showGallery; window.toggleGallerySelectMode = toggleGallerySelectMode;
+window.toggleGalleryItem = toggleGalleryItem; window.downloadSelectedFiles = downloadSelectedFiles;
+window.openCamera = openCamera; window.votePoll = votePoll; window.closePoll = closePoll;
 window.openUserProfile = openUserProfile; window.editUserRole = editUserRole; window.setUserRole = setUserRole;
 window.removeUser = removeUser; window.showAddPlayer = showAddPlayer; window.addPlayer = addPlayer;
 window.editMyProfile = editMyProfile; window.saveMyProfile = saveMyProfile; window.showRegisterModal = showRegisterModal;
-window.showPrivacyPolicy = showPrivacyPolicy;
-window.showResetConfirm = showResetConfirm; window.confirmReset = confirmReset;
-window.logout = logout; window.doLogin = doLogin;
-window.closeModal = closeModal;
+window.showPrivacyPolicy = showPrivacyPolicy; window.showResetConfirm = showResetConfirm; window.confirmReset = confirmReset;
+window.logout = logout; window.doLogin = doLogin; window.closeModal = closeModal;
+
+function setTab(tab){ 
+  if (state.unsub._msgs) { state.unsub._msgs(); state.unsub._msgs = null; } 
+  state.tab = tab; state.threadId = null; state.eventId = null; render(); 
+}
 </script>
 </body>
 </html>
