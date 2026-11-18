@@ -23,32 +23,32 @@ body.dark-theme {
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:16px;height:100%;overflow:hidden}
 body{background:var(--bg);color:var(--text);position:fixed;top:var(--app-top);left:0;right:0;height:var(--app-h);overflow:hidden; transition: background 0.3s, color 0.3s;}
-.app{position:relative;height:100%;width:100%;display:flex;flex-direction:column;max-width:480px;margin:0 auto;background:var(--bg);overflow:hidden; z-index: 2; transition: background 0.3s;}
-#hdr{flex:0 0 auto;padding:16px 20px;background:var(--bg);border-bottom:1px solid var(--border);z-index:10;padding-top:calc(16px + env(safe-area-inset-top,0px)); transition: background 0.3s, border 0.3s;}
+.app{position:relative;height:100%;width:100%;display:flex;flex-direction:column;max-width:480px;margin:0 auto;background:var(--bg);overflow:hidden; z-index: 2;}
+#hdr{flex:0 0 auto;padding:16px 20px;background:var(--bg);border-bottom:1px solid var(--border);z-index:10;padding-top:calc(16px + env(safe-area-inset-top,0px));}
 .hdr-title{font-size:32px;font-weight:800;letter-spacing:-.04em;background:var(--grad-pt);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 #view{flex:1 1 auto;overflow-y:auto;padding:16px 20px;-webkit-overflow-scrolling:touch}
-.chat-bar{flex:0 0 auto;display:flex;gap:6px;align-items:center;padding:8px 10px;background:var(--card);border-top:1px solid var(--border); transition: background 0.3s, border 0.3s;}
+.chat-bar{flex:0 0 auto;display:flex;gap:6px;align-items:center;padding:8px 10px;background:var(--card);border-top:1px solid var(--border);}
 .chat-bar[hidden]{display:none}
-.tabs{flex:0 0 auto;display:flex;justify-content:space-around;background:var(--card);border-top:1px solid var(--border);padding:6px 16px calc(6px + env(safe-area-inset-bottom,0px)); transition: background 0.3s, border 0.3s; z-index: 50;}
+.tabs{flex:0 0 auto;display:flex;justify-content:space-around;background:var(--card);border-top:1px solid var(--border);padding:6px 16px calc(6px + env(safe-area-inset-bottom,0px)); z-index: 50;}
 .tabs[hidden]{display:none}
 .tab{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 14px;border:none;background:none;color:var(--text-3);cursor:pointer;border-radius:var(--radius-pill)}
 .tab.active{color:var(--pt-blue)}
 .tab svg{width:24px;height:24px;fill:currentColor}
 .tab-label{font-size:11px;font-weight:600}
-.card{background:var(--card);border-radius:var(--radius-lg);padding:18px;margin-bottom:14px;box-shadow:var(--shadow-sm);border:1px solid var(--border); transition: background 0.3s, border 0.3s;}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 20px;border-radius:var(--radius-pill);font-size:15px;font-weight:600;border:none;cursor:pointer;font-family:inherit; transition: transform 0.1s, background 0.3s;}
+.card{background:var(--card);border-radius:var(--radius-lg);padding:18px;margin-bottom:14px;box-shadow:var(--shadow-sm);border:1px solid var(--border);}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 20px;border-radius:var(--radius-pill);font-size:15px;font-weight:600;border:none;cursor:pointer;font-family:inherit;}
 .btn:active{transform:scale(0.96);}
 .btn-primary{background:var(--grad-pt);color:#fff;box-shadow:var(--shadow-glow)}
 .btn-secondary{background:var(--fill);color:var(--text)}
 .btn-danger{background:var(--red);color:#fff}
 .btn-ghost{background:transparent;color:var(--pt-blue);padding:8px 12px}
-.input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-md);font-size:16px;background:var(--card);color:var(--text);outline:none;font-family:inherit; transition: background 0.3s, border 0.3s, color 0.3s;}
+.input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-md);font-size:16px;background:var(--card);color:var(--text);outline:none;font-family:inherit;}
 .input:focus{border-color:var(--pt-blue);box-shadow:0 0 0 4px rgba(37,99,235,.1)}
 .modal-bg{position:fixed;top:var(--app-top);left:0;right:0;height:var(--app-h);background:rgba(15,23,42,.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
 .modal-bg.open{display:flex}
-.modal{background:var(--card);border-radius:var(--radius-lg) var(--radius-lg) 0 0;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden; transition: background 0.3s;}
-.modal-header{flex:0 0 auto;padding:10px 20px 12px;background:var(--card);border-bottom:1px solid var(--border);border-radius:var(--radius-lg) var(--radius-lg) 0 0;}
-.modal-body{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 20px 40px;display:flex;flex-direction:column;gap:12px}
+.modal{background:var(--card);border-radius:var(--radius-lg) var(--radius-lg) 0 0;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;}
+.modal-header{flex:0 0 auto;padding:10px 20px 12px;background:var(--card);border-bottom:1px solid var(--border);}
+.modal-body{flex:1 1 auto;overflow-y:auto;padding:16px 20px 40px;display:flex;flex-direction:column;gap:12px}
 .modal-handle{width:36px;height:6px;background:var(--border);border-radius:3px;margin:0 auto 10px}
 .toast{position:fixed;bottom:calc(100px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:12px 20px;border-radius:var(--radius-pill);font-size:14px;font-weight:600;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90vw;text-align:center}
 .toast.show{opacity:1}
@@ -80,13 +80,13 @@ input:checked + .slider:before { transform: translateX(20px); }
   <main id="view"></main>
   <div id="chatBar" class="chat-bar" hidden></div>
   <nav class="tabs" id="tabs" hidden>
-    <button class="tab" data-tab="home" onclick="window.setTab('home')"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span class="tab-label">Главная</span></button>
-    <button class="tab" data-tab="calendar" onclick="window.setTab('calendar')"><svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z"/></svg><span class="tab-label">Календарь</span></button>
-    <button class="tab" data-tab="chat" onclick="window.setTab('chat')"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg><span class="tab-label">Чат</span></button>
-    <button class="tab" data-tab="team" onclick="window.setTab('team')"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg><span class="tab-label">Команда</span></button>
+    <button class="tab" data-tab="home" onclick="setTab('home')"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span class="tab-label">Главная</span></button>
+    <button class="tab" data-tab="calendar" onclick="setTab('calendar')"><svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z"/></svg><span class="tab-label">Календарь</span></button>
+    <button class="tab" data-tab="chat" onclick="setTab('chat')"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg><span class="tab-label">Чат</span></button>
+    <button class="tab" data-tab="team" onclick="setTab('team')"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg><span class="tab-label">Команда</span></button>
   </nav>
 </div>
-<div class="modal-bg" id="modalBg" onclick="if(event.target===this)window.closeModal()">
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
   <div class="modal"><div class="modal-header" id="modalHeader"></div><div class="modal-body" id="modalBody"></div></div>
 </div>
 <div class="toast" id="toast"></div>
@@ -117,47 +117,38 @@ let userSettings = {
 
 if (userSettings.theme === 'dark') document.body.classList.add('dark-theme');
 
-(function createSnow() {
-  const container = document.getElementById('snow-container');
-  if (!container || !userSettings.animations) return;
-  container.style.display = 'block';
-  container.innerHTML = '';
-  for (let i = 0; i < 15; i++) {
-    const flake = document.createElement('div');
-    flake.className = 'snowflake';
-    flake.innerText = '❄';
-    flake.style.left = Math.random() * 100 + 'vw';
-    flake.style.animationDuration = (Math.random() * 3 + 4) + 's';
-    flake.style.animationDelay = Math.random() * 5 + 's';
-    container.appendChild(flake);
-  }
-})();
+// Делаем функции доступными глобально для HTML onclick
+window.closeModal = closeModal;
+window.setTab = setTab;
+window.showSettings = showSettings;
+window.editMyProfile = editMyProfile;
+window.doLogin = doLogin;
+window.doRegister = doRegister;
+window.renderRegister = renderRegister;
+window.saveActivation = saveActivation;
+window.setRsvp = setRsvp;
+window.showCreateEvent = showCreateEvent;
+window.submitCreateEvent = submitCreateEvent;
+window.openEvent = openEvent;
+window.backFromEvent = backFromEvent;
+window.openThread = openThread;
+window.closeThread = closeThread;
+window.sendChatMessage = sendChatMessage;
+window.showCreatePoll = showCreatePoll;
+window.submitCreatePoll = submitCreatePoll;
+window.openAttachMenu = openAttachMenu;
 
-function esc(s){ if (s == null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-function initials(name){ if (!name) return '?'; return name.split(' ').filter(Boolean).map(w=>w[0]).join('').substr(0,2).toUpperCase() || '?'; }
-function formatDate(ts){ return new Date(ts).toLocaleDateString('ru-RU',{day:'numeric',month:'short'}); }
-function formatTime(ts){ return new Date(ts).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}); }
-function toast(msg){ const el = document.getElementById('toast'); if(!el) return; el.textContent = msg; el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(()=>el.classList.remove('show'), 2500); }
-function vibrate(ms = 15) { if (!userSettings.vibration || !navigator.vibrate) return; navigator.vibrate(ms); }
+function closeModal(){ 
+  document.getElementById('modalBg').classList.remove('open'); 
+  document.getElementById('modalBody').innerHTML=''; 
+  document.getElementById('modalHeader').innerHTML=''; 
+}
 
-// Глобальные функции для модальных окон
-window.closeModal = function() {
-  const bg = document.getElementById('modalBg');
-  if(bg) bg.classList.remove('open');
-  const body = document.getElementById('modalBody');
-  const header = document.getElementById('modalHeader');
-  if(body) body.innerHTML=''; 
-  if(header) header.innerHTML='';
-};
-
-window.showModal = function(bodyHtml, headerHtml){
-  const body = document.getElementById('modalBody');
-  const header = document.getElementById('modalHeader');
-  const bg = document.getElementById('modalBg');
-  if(body) body.innerHTML = bodyHtml;
-  if(header) header.innerHTML = '<div class="modal-handle"></div>' + (headerHtml || '');
-  if(bg) bg.classList.add('open');
-};
+function showModal(bodyHtml, headerHtml){
+  document.getElementById('modalBody').innerHTML = bodyHtml;
+  document.getElementById('modalHeader').innerHTML = '<div class="modal-handle"></div>' + (headerHtml || '');
+  document.getElementById('modalBg').classList.add('open');
+}
 
 let DB = { users:{}, events:{}, threads:{}, polls:{}, venues:{} };
 let state = { tab:'home', threadId:null, eventId:null, eventFromTab:'calendar', unsub:[] };
@@ -187,23 +178,23 @@ function subscribeAll(){
   state.unsub.push(onSnapshot(collection(db,'users'), snap => {
     DB.users = {}; snap.forEach(d => DB.users[d.id] = d.data());
     if (currentUser && DB.users[currentUser.uid]) currentProfile = DB.users[currentUser.uid];
-    if (!state.threadId && !state.eventId) window.render();
+    if (!state.threadId && !state.eventId) render();
   }));
   
   state.unsub.push(onSnapshot(collection(db,'events'), snap => {
     DB.events = {}; snap.forEach(d => DB.events[d.id] = d.data());
-    if (!state.threadId) { if (state.eventId) renderEventDetail(); else window.render(); }
+    if (!state.threadId) { if (state.eventId) renderEventDetail(); else render(); }
   }));
   
   state.unsub.push(onSnapshot(collection(db,'threads'), snap => {
     DB.threads = {}; snap.forEach(d => DB.threads[d.id] = d.data());
     if (!DB.threads['general']) DB.threads['general'] = { id: 'general', type: 'general', name: 'Общий чат', messages: [], pinned: [] };
-    if (state.tab === 'chat') window.render();
+    if (state.tab === 'chat') render();
   }));
   
   state.unsub.push(onSnapshot(collection(db,'polls'), snap => {
     DB.polls = {}; snap.forEach(d => DB.polls[d.id] = d.data());
-    if (state.tab === 'home') window.render();
+    if (state.tab === 'home') render();
   }));
 }
 
@@ -214,7 +205,7 @@ onAuthStateChanged(auth, async (user) => {
     if (userSnap.exists()) {
       currentProfile = userSnap.data();
       subscribeAll();
-      window.render();
+      render();
     } else {
       renderActivationScreen();
     }
@@ -226,20 +217,19 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-window.setTab = function(t){ 
+function setTab(t){ 
   state.tab = t; 
   state.threadId = null; 
   state.eventId = null; 
-  window.render(); 
-};
+  render(); 
+}
 
-window.render = function(){
+function render(){
   if (!currentUser || !currentProfile) return;
-  const tabsEl = document.getElementById('tabs');
-  if(tabsEl) tabsEl.hidden = false;
+  document.getElementById('tabs').hidden = false;
   renderHeader();
   const chatBar = document.getElementById('chatBar');
-  if(chatBar) { chatBar.hidden = true; chatBar.innerHTML = ''; }
+  chatBar.hidden = true; chatBar.innerHTML = '';
   
   if (state.tab === 'home') renderHome();
   else if (state.tab === 'calendar') renderCalendar();
@@ -247,44 +237,38 @@ window.render = function(){
   else if (state.tab === 'team') renderTeam();
   
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === state.tab));
-};
+}
 
 function renderHeader(){
   const titles = { home:'🏒 Политехника', calendar:'Календарь', chat:'Чат', team:'Команда' };
-  const hdr = document.getElementById('hdr');
-  if(hdr) {
-    hdr.innerHTML = '<div class="row" style="justify-content:space-between"><div class="hdr-title">' + (titles[state.tab]||'') + '</div><div class="row" style="gap:12px;"><button class="btn btn-ghost" style="padding:4px;" onclick="window.showSettings()">⚙️</button><div onclick="window.editMyProfile()" style="cursor:pointer">' + renderAvatar(currentProfile, 40) + '</div></div></div>';
-  }
+  document.getElementById('hdr').innerHTML = '<div class="row" style="justify-content:space-between"><div class="hdr-title">' + (titles[state.tab]||'') + '</div><div class="row" style="gap:12px;"><button class="btn btn-ghost" style="padding:4px;" onclick="showSettings()">⚙️</button><div onclick="editMyProfile()" style="cursor:pointer">' + renderAvatar(currentProfile, 40) + '</div></div></div>';
 }
 
 function renderLogin(){
-  const tabsEl = document.getElementById('tabs');
-  if(tabsEl) tabsEl.hidden = true;
-  const hdr = document.getElementById('hdr');
-  if(hdr) hdr.innerHTML = '<div class="hdr-title">🏒 Политехника</div>';
+  document.getElementById('tabs').hidden = true;
+  document.getElementById('hdr').innerHTML = '<div class="hdr-title">🏒 Политехника</div>';
   document.getElementById('view').innerHTML = '<div class="card" style="margin-top:40px">' +
     '<h2 style="margin-bottom:16px">Вход в систему</h2>' +
     '<input class="input" id="logEmail" type="email" placeholder="Email" style="margin-bottom:10px">' +
     '<input class="input" id="logPass" type="password" placeholder="Пароль" style="margin-bottom:16px">' +
-    '<button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="window.doLogin()">Войти</button>' +
-    '<button class="btn btn-secondary" style="width:100%" onclick="window.renderRegister()">Регистрация</button>' +
+    '<button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="doLogin()">Войти</button>' +
+    '<button class="btn btn-secondary" style="width:100%" onclick="renderRegister()">Регистрация</button>' +
   '</div>';
 }
 
-window.renderRegister = function(){
+function renderRegister(){
   document.getElementById('view').innerHTML = '<div class="card" style="margin-top:20px">' +
     '<h2 style="margin-bottom:16px">Регистрация</h2>' +
     '<input class="input" id="regEmail" type="email" placeholder="Email" style="margin-bottom:10px">' +
     '<input class="input" id="regPass" type="password" placeholder="Пароль" style="margin-bottom:10px">' +
     '<input class="input" id="regName" placeholder="Имя и Фамилия" style="margin-bottom:16px">' +
-    '<button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="window.doRegister()">Зарегистрироваться</button>' +
+    '<button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="doRegister()">Зарегистрироваться</button>' +
     '<button class="btn btn-secondary" style="width:100%" onclick="renderLogin()">Назад ко входу</button>' +
   '</div>';
-};
+}
 
 function renderActivationScreen(){
-  const tabsEl = document.getElementById('tabs');
-  if(tabsEl) tabsEl.hidden = true;
+  document.getElementById('tabs').hidden = true;
   document.getElementById('view').innerHTML = '<div class="card" style="margin-top:40px">' +
     '<h2>Анкета игрока</h2>' +
     '<p class="muted small" style="margin:10px 0">Заполните данные для доступа к команде</p>' +
@@ -292,17 +276,17 @@ function renderActivationScreen(){
     '<input class="input" id="actNick" placeholder="Игровой никнейм" style="margin-bottom:10px">' +
     '<select class="input" id="actPos" style="margin-bottom:10px"><option value="forward">Нападающий</option><option value="defense">Защитник</option><option value="goalie">Вратарь</option></select>' +
     '<input class="input" id="actBday" type="date" style="margin-bottom:16px">' +
-    '<button class="btn btn-primary" style="width:100%" onclick="window.saveActivation()">Сохранить</button>' +
+    '<button class="btn btn-primary" style="width:100%" onclick="saveActivation()">Сохранить</button>' +
   '</div>';
 }
 
-window.doLogin = async function(){
+async function doLogin(){
   const email = document.getElementById('logEmail').value;
   const pass = document.getElementById('logPass').value;
   try { await signInWithEmailAndPassword(auth, email, pass); } catch(e) { toast('Ошибка входа: ' + e.message); }
-};
+}
 
-window.doRegister = async function(){
+async function doRegister(){
   const email = document.getElementById('regEmail').value;
   const pass = document.getElementById('regPass').value;
   const name = document.getElementById('regName').value;
@@ -311,9 +295,9 @@ window.doRegister = async function(){
     await setDoc(doc(db,'users',cred.user.uid), { uid: cred.user.uid, name, role:'player', position:'forward', status:'pending', createdAt:Date.now() });
     renderActivationScreen();
   } catch(e) { toast('Ошибка регистрации: ' + e.message); }
-};
+}
 
-window.saveActivation = async function(){
+async function saveActivation(){
   const name = document.getElementById('actName').value;
   const nickname = document.getElementById('actNick').value;
   const position = document.getElementById('actPos').value;
@@ -321,15 +305,15 @@ window.saveActivation = async function(){
   if (!name) { toast('Введите имя'); return; }
   await setDoc(doc(db,'users',currentUser.uid), { name, nickname: nickname||name, position, birthday, role:'player', status:'active', uid:currentUser.uid }, {merge:true});
   window.location.reload();
-};
+}
 
-window.showSettings = function() {
-  window.showModal(
+function showSettings() {
+  showModal(
     '<div style="display:flex; flex-direction:column; gap:16px;">' +
       '<div class="row" style="justify-content:space-between"><div><b>Тёмная тема</b></div><label class="switch"><input type="checkbox" id="setTheme" ' + (userSettings.theme === 'dark' ? 'checked' : '') + '><span class="slider"></span></label></div>' +
       '<div class="row" style="justify-content:space-between"><div><b>Анимации</b></div><label class="switch"><input type="checkbox" id="setAnim" ' + (userSettings.animations ? 'checked' : '') + '><span class="slider"></span></label></div>' +
       '<div class="row" style="justify-content:space-between"><div><b>Вибрация</b></div><label class="switch"><input type="checkbox" id="setVibe" ' + (userSettings.vibration ? 'checked' : '') + '><span class="slider"></span></label></div>' +
-      '<button class="btn btn-danger" style="margin-top:10px" onclick="window.doSignOut()">Выйти из аккаунта</button>' +
+      '<button class="btn btn-danger" style="margin-top:10px" onclick="signOut(auth); closeModal();">Выйти из аккаунта</button>' +
     '</div>',
     '<h3>Настройки</h3>'
   );
@@ -347,29 +331,23 @@ window.showSettings = function() {
     userSettings.vibration = e.target.checked;
     localStorage.setItem('app_vibration', userSettings.vibration);
   };
-};
+}
 
-window.doSignOut = function() {
-  signOut(auth);
-  window.closeModal();
-};
-
-window.editMyProfile = function(){
-  window.showModal(
+function editMyProfile(){
+  showModal(
     '<input class="input" id="editNick" value="' + esc(currentProfile.nickname||'') + '" placeholder="Никнейм" style="margin-bottom:10px">' +
     '<input class="input" id="editAvatar" value="' + esc(currentProfile.avatarUrl||'') + '" placeholder="Ссылка на фото/аватарку" style="margin-bottom:16px">' +
-    '<button class="btn btn-primary" style="width:100%" onclick="window.saveMyProfile()">Сохранить</button>',
+    '<button class="btn btn-primary" style="width:100%" onclick="saveMyProfile()">Сохранить</button>',
     '<h3>Редактировать профиль</h3>'
   );
-};
+}
 
-window.saveMyProfile = async function(){
+async function saveMyProfile(){
   const nickname = document.getElementById('editNick').value;
   const avatarUrl = document.getElementById('editAvatar').value;
   await updateDoc(doc(db,'users',currentUser.uid), { nickname, avatarUrl });
-  window.closeModal(); 
-  toast('Сохранено');
-};
+  closeModal(); toast('Сохранено');
+}
 
 function renderHome(){
   const now = Date.now();
@@ -383,8 +361,8 @@ function renderHome(){
       '<div style="font-size:22px;font-weight:700;margin-top:4px">' + esc(next.title) + '</div>' +
       '<div style="opacity:.9;font-size:14px">' + formatDate(next.startsAt) + ' · ' + formatTime(next.startsAt) + ' · ' + esc(next.venue) + '</div>' +
       '<div style="display:flex;gap:8px;margin-top:14px">' +
-        '<button class="btn ' + (myStatus==='going'?'btn-primary':'btn-secondary') + '" style="flex:1;font-size:14px;padding:10px" onclick="window.setRsvp(\''+next.id+'\',\'going\')">✓ Иду</button>' +
-        '<button class="btn ' + (myStatus==='declined'?'btn-primary':'btn-secondary') + '" style="flex:1;font-size:14px;padding:10px" onclick="window.setRsvp(\''+next.id+'\',\'declined\')">✕</button>' +
+        '<button class="btn ' + (myStatus==='going'?'btn-primary':'btn-secondary') + '" style="flex:1;font-size:14px;padding:10px" onclick="setRsvp(\''+next.id+'\',\'going\')">✓ Иду</button>' +
+        '<button class="btn ' + (myStatus==='declined'?'btn-primary':'btn-secondary') + '" style="flex:1;font-size:14px;padding:10px" onclick="setRsvp(\''+next.id+'\',\'declined\')">✕</button>' +
       '</div></div>';
   }
   
@@ -393,24 +371,24 @@ function renderHome(){
     html += '<h3 style="margin:20px 0 12px;font-size:20px">📊 Активные опросы</h3>';
     activePolls.forEach(p => html += renderPoll(p));
   }
-  if (canPin()) html += '<button class="btn btn-secondary" onclick="window.showCreatePoll()" style="width:100%;margin-bottom:14px">📊 Создать опрос</button>';
+  if (canPin()) html += '<button class="btn btn-secondary" onclick="showCreatePoll()" style="width:100%;margin-bottom:14px">📊 Создать опрос</button>';
 
   document.getElementById('view').innerHTML = html || '<div class="empty-state"><h3>Главная пуста</h3></div>';
 }
 
-window.setRsvp = async function(eventId, status){
+async function setRsvp(eventId, status){
   vibrate(10);
   const e = DB.events[eventId]; if (!e) return;
   const rsvp = e.rsvp || {};
   rsvp[currentUser.uid] = status;
   await updateDoc(doc(db,'events',eventId), { rsvp });
-};
+}
 
 function renderCalendar(){
   const now = Date.now();
   const events = Object.values(DB.events).filter(e => e.startsAt > now && !e.cancelled).sort((a,b)=>a.startsAt-b.startsAt);
   let html = '';
-  if (canPin()) html += '<button class="btn btn-primary" onclick="window.showCreateEvent()" style="width:100%;margin-bottom:12px">＋ Создать событие</button>';
+  if (canPin()) html += '<button class="btn btn-primary" onclick="showCreateEvent()" style="width:100%;margin-bottom:12px">＋ Создать событие</button>';
   if (events.length) events.forEach(e => html += renderEventCard(e));
   else html += '<div class="empty-state"><h3>Нет предстоящих событий</h3></div>';
   document.getElementById('view').innerHTML = html;
@@ -418,24 +396,24 @@ function renderCalendar(){
 
 function renderEventCard(e){
   const going = e.rsvp ? Object.values(e.rsvp).filter(v => v === 'going').length : 0;
-  return '<div class="card" style="cursor:pointer" onclick="window.openEvent(\''+e.id+'\')">' +
+  return '<div class="card" style="cursor:pointer" onclick="openEvent(\''+e.id+'\')">' +
     '<div class="row"><div style="flex:1"><div style="font-weight:700;font-size:16px">' + esc(e.title) + '</div>' +
     '<div class="small muted">' + formatDate(e.startsAt) + ' · ' + formatTime(e.startsAt) + ' · ' + esc(e.venue) + '</div></div>' +
     '<div style="font-size:22px;font-weight:800;color:var(--pt-blue)">' + going + '</div></div></div>';
 }
 
-window.showCreateEvent = function(){
-  window.showModal(
+function showCreateEvent(){
+  showModal(
     '<select class="input" id="evType"><option value="training">Тренировка</option><option value="game">Игра</option></select>' +
     '<input class="input" id="evTitle" placeholder="Название (опционально)">' +
     '<input class="input" id="evDate" type="datetime-local">' +
     '<input class="input" id="evVenue" placeholder="Арена / Адрес">' +
-    '<button class="btn btn-primary" style="width:100%" onclick="window.submitCreateEvent()">Создать</button>',
+    '<button class="btn btn-primary" style="width:100%" onclick="submitCreateEvent()">Создать</button>',
     '<h3>Новое событие</h3>'
   );
-};
+}
 
-window.submitCreateEvent = async function(){
+async function submitCreateEvent(){
   const type = document.getElementById('evType').value;
   let title = document.getElementById('evTitle').value.trim() || (type==='game'?'Игра':'Тренировка');
   const dateVal = document.getElementById('evDate').value;
@@ -443,59 +421,46 @@ window.submitCreateEvent = async function(){
   if (!dateVal) { toast('Выберите дату'); return; }
   const id = 'ev_' + Date.now().toString(36);
   await setDoc(doc(db,'events',id), { id, type, title, startsAt: new Date(dateVal).getTime(), venue, rsvp:{}, cancelled:false });
-  window.closeModal(); 
-  toast('Создано');
-};
+  closeModal(); toast('Создано');
+}
 
-window.openEvent = function(id){
-  state.eventId = id; 
-  state.eventFromTab = state.tab; 
-  state.tab = 'calendar';
+function openEvent(id){
+  state.eventId = id; state.eventFromTab = state.tab; state.tab = 'calendar';
   renderEventDetail();
-};
+}
 
 function renderEventDetail(){
   const e = DB.events[state.eventId]; if (!e) return;
   const going = e.rsvp ? Object.entries(e.rsvp).filter(([_,v])=>v==='going').map(([uid])=>DB.users[uid]).filter(Boolean) : [];
-  let html = '<div class="card"><button class="btn btn-secondary" style="margin-bottom:10px" onclick="window.backFromEvent()">← Назад</button>' +
+  let html = '<div class="card"><button class="btn btn-secondary" style="margin-bottom:10px" onclick="backFromEvent()">← Назад</button>' +
     '<h2>' + esc(e.title) + '</h2>' +
     '<div class="small muted">' + formatDate(e.startsAt) + ' · ' + formatTime(e.startsAt) + ' · ' + esc(e.venue) + '</div>' +
-    '<div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" style="flex:1" onclick="window.setRsvp(\''+e.id+'\',\'going\')">✓ Иду</button><button class="btn btn-secondary" style="flex:1" onclick="window.setRsvp(\''+e.id+'\',\'declined\')">✕</button></div></div>';
+    '<div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" style="flex:1" onclick="setRsvp(\''+e.id+'\',\'going\')">✓ Иду</button><button class="btn btn-secondary" style="flex:1" onclick="setRsvp(\''+e.id+'\',\'declined\')">✕</button></div></div>';
   html += '<h4 style="margin:14px 0 8px">Идут (' + going.length + ')</h4>';
   going.forEach(u => html += '<div class="card row" style="padding:10px">' + renderAvatar(u, 38) + renderNameBlock(u) + '</div>');
   document.getElementById('view').innerHTML = html;
 }
-
-window.backFromEvent = function(){ 
-  state.eventId = null; 
-  state.tab = state.eventFromTab; 
-  window.render(); 
-};
+function backFromEvent(){ state.eventId = null; state.tab = state.eventFromTab; render(); }
 
 function renderChat(){
   if (state.threadId) { renderThreadChat(state.threadId); return; }
   let html = '<h3 style="margin-bottom:12px">Чаты</h3>' +
-    '<div class="card row" style="cursor:pointer" onclick="window.openThread(\'general\')">' +
+    '<div class="card row" style="cursor:pointer" onclick="openThread(\'general\')">' +
       '<div style="font-size:32px">💬</div><div><div style="font-weight:700">Общий чат</div><div class="small muted">Основное обсуждение команды</div></div>' +
     '</div>';
   document.getElementById('view').innerHTML = html;
 }
 
-window.openThread = function(id){ 
-  state.threadId = id; 
-  window.render(); 
-};
+function openThread(id){ state.threadId = id; render(); }
 
 function renderThreadChat(threadId){
   const chatBar = document.getElementById('chatBar');
-  if(chatBar) {
-    chatBar.hidden = false;
-    chatBar.innerHTML = '<button class="btn btn-secondary" style="padding:10px;" onclick="window.openAttachMenu()">📎</button>' +
-      '<input class="input" id="chatInput" placeholder="Сообщение..." style="flex:1">' +
-      '<button class="btn btn-primary" onclick="window.sendChatMessage(\''+threadId+'\')">➤</button>';
-  }
+  chatBar.hidden = false;
+  chatBar.innerHTML = '<button class="btn btn-secondary" style="padding:10px;" onclick="openAttachMenu()">📎</button>' +
+    '<input class="input" id="chatInput" placeholder="Сообщение..." style="flex:1">' +
+    '<button class="btn btn-primary" onclick="sendChatMessage(\''+threadId+'\')">➤</button>';
   
-  let html = '<button class="btn btn-secondary" style="margin-bottom:10px" onclick="window.closeThread()">← Назад к чатам</button>' +
+  let html = '<button class="btn btn-secondary" style="margin-bottom:10px" onclick="closeThread()">← Назад к чатам</button>' +
     '<div id="msgList" style="display:flex;flex-direction:column;gap:8px;padding-bottom:20px">Загрузка...</div>';
   document.getElementById('view').innerHTML = html;
 
@@ -516,30 +481,28 @@ function renderThreadChat(threadId){
   });
 }
 
-window.closeThread = function() {
+function closeThread() {
   state.threadId = null;
-  const chatBar = document.getElementById('chatBar');
-  if(chatBar) chatBar.hidden = true;
-  window.render();
-};
+  document.getElementById('chatBar').hidden = true;
+  render();
+}
 
-window.openAttachMenu = function() {
-  window.showModal(
+function openAttachMenu() {
+  showModal(
     '<div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; text-align:center;">' +
-      '<div onclick="window.showCreatePoll()" style="padding:12px; background:var(--fill); border-radius:12px; cursor:pointer;"><div style="font-size:28px">📊</div><div class="small" style="margin-top:4px">Опрос</div></div>' +
+      '<div onclick="showCreatePoll()" style="padding:12px; background:var(--fill); border-radius:12px; cursor:pointer;"><div style="font-size:28px">📊</div><div class="small" style="margin-top:4px">Опрос</div></div>' +
     '</div>',
     '<h3>Прикрепить</h3>'
   );
-};
+}
 
-window.sendChatMessage = async function(threadId){
+async function sendChatMessage(threadId){
   const input = document.getElementById('chatInput');
-  if(!input) return;
   const text = input.value.trim();
   if (!text) return;
   input.value = '';
   await addDoc(collection(db, 'threads', threadId, 'messages'), { userId: currentUser.uid, text, ts: Date.now() });
-};
+}
 
 function renderTeam(){
   const users = Object.values(DB.users);
@@ -555,26 +518,30 @@ function renderPoll(p){
   return '<div class="card"><h4>📊 ' + esc(p.question) + '</h4></div>';
 }
 
-window.showCreatePoll = function(){
-  window.showModal(
+function showCreatePoll(){
+  showModal(
     '<input class="input" id="pollQ" placeholder="Вопрос опроса" style="margin-bottom:10px">' +
     '<input class="input" id="pollOpt1" placeholder="Вариант 1" style="margin-bottom:10px">' +
     '<input class="input" id="pollOpt2" placeholder="Вариант 2" style="margin-bottom:16px">' +
-    '<button class="btn btn-primary" style="width:100%" onclick="window.submitCreatePoll()">Создать опрос</button>',
+    '<button class="btn btn-primary" style="width:100%" onclick="submitCreatePoll()">Создать опрос</button>',
     '<h3>Новый опрос</h3>'
   );
-};
+}
 
-window.submitCreatePoll = async function(){
-  const questionEl = document.getElementById('pollQ');
-  if(!questionEl) return;
-  const question = questionEl.value.trim();
+async function submitCreatePoll(){
+  const question = document.getElementById('pollQ').value.trim();
   if (!question) { toast('Введите вопрос'); return; }
   const id = 'poll_' + Date.now().toString(36);
   await setDoc(doc(db,'polls',id), { id, question, options:['Да','Нет'], votes:{}, closed:false });
-  window.closeModal(); 
-  toast('Опрос создан');
-};
+  closeModal(); toast('Опрос создан');
+}
+
+function esc(s){ if (s == null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function initials(name){ if (!name) return '?'; return name.split(' ').filter(Boolean).map(w=>w[0]).join('').substr(0,2).toUpperCase() || '?'; }
+function formatDate(ts){ return new Date(ts).toLocaleDateString('ru-RU',{day:'numeric',month:'short'}); }
+function formatTime(ts){ return new Date(ts).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}); }
+function toast(msg){ const el = document.getElementById('toast'); if(!el) return; el.textContent = msg; el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(()=>el.classList.remove('show'), 2500); }
+function vibrate(ms = 15) { if (!userSettings.vibration || !navigator.vibrate) return; navigator.vibrate(ms); }
 </script>
 </body>
 </html>
