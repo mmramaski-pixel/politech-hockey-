@@ -27,7 +27,6 @@ body{background:var(--bg);color:var(--text);position:fixed;top:var(--app-top);le
 .btn-secondary{background:var(--fill);color:var(--text)}
 .btn-danger{background:var(--red);color:#fff}
 .btn-ghost{background:transparent;color:var(--pt-blue);padding:8px 12px}
-.btn-icon{padding:10px;min-width:42px;height:42px}
 .input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-md);font-size:16px;background:var(--card);color:var(--text);outline:none;font-family:inherit}
 .input:focus{border-color:var(--pt-blue);box-shadow:0 0 0 4px rgba(37,99,235,.1)}
 .app-icon{width:80px;height:80px;border-radius:20px;background:var(--grad-pt);display:flex;align-items:center;justify-content:center;font-size:40px;box-shadow:var(--shadow-glow)}
@@ -760,7 +759,16 @@ function renderMessage(m){
   const isMe = m.userId === currentUser.uid;
   const bubbleBg = isMe ? 'var(--grad-pt)' : 'var(--card)';
   const bubbleColor = isMe ? '#fff' : 'var(--text)';
-  let content = m.type === 'sticker' ? '<div class="msg-sticker">' + m.emoji + '</div>' : '<div>' + esc(m.text) + '</div>';
+  
+  let content = '';
+  if (m.type === 'sticker') {
+    content = '<div class="msg-sticker">' + m.emoji + '</div>';
+  } else if (m.type === 'image') {
+    content = '<img src="' + m.data + '" style="max-width:100%; border-radius:12px; display:block; cursor:pointer;" onclick="window.open(this.src)">';
+  } else {
+    content = '<div>' + esc(m.text) + '</div>';
+  }
+
   const meta = '<div class="tiny" style="color:' + (isMe ? 'rgba(255,255,255,.7)' : 'var(--text-3)') + ';margin-top:2px;text-align:right">' + formatTime(m.ts || Date.now()) + '</div>';
   const author = !isMe ? '<div class="tiny" style="color:rgba(15,23,42,.7);margin-bottom:2px;font-weight:600">' + esc(user.name) + '</div>' : '';
   const isSticker = m.type === 'sticker';
@@ -768,6 +776,7 @@ function renderMessage(m){
     '<div class="chat-msg" style="background:' + (isSticker ? 'transparent' : bubbleBg) + ';color:' + bubbleColor + ';' + (isSticker ? 'box-shadow:none;padding:0' : '') + '">' +
     author + content + (isSticker ? '' : meta) + '</div></div>';
 }
+
 function showChatBar(threadId){
   const bar = document.getElementById('chatBar');
   bar.hidden = false;
@@ -798,26 +807,27 @@ function showChatBar(threadId){
   sendBtn.onclick = () => { sendTextMessage(threadId); setTimeout(() => { input.dispatchEvent(new Event('input')); }, 50); };
   setTimeout(() => input.focus(), 100);
 }
+
 function showAttachMenu(threadId) {
   const html = `
     <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; padding:10px 0;">
-      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="openCamera('gallery')">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="openCamera('gallery', '${threadId}')">
         <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#3B82F6,#60A5FA); display:flex; align-items:center; justify-content:center; font-size:24px; color:white;">🖼</div>
         <span style="font-size:12px;">Галерея</span>
       </div>
-      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="openCamera('photo')">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="openCamera('photo', '${threadId}')">
         <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#EF4444,#F87171); display:flex; align-items:center; justify-content:center; font-size:24px; color:white;">📷</div>
         <span style="font-size:12px;">Камера</span>
       </div>
-      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="openCamera('video')">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="toast('Видео отправка доступна в PRO версиях'); closeModal();">
         <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#8B5CF6,#A78BFA); display:flex; align-items:center; justify-content:center; font-size:24px; color:white;">🎥</div>
         <span style="font-size:12px;">Видео</span>
       </div>
-      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="openCamera('file')">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="openCamera('file', '${threadId}')">
         <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#F59E0B,#FCD34D); display:flex; align-items:center; justify-content:center; font-size:24px; color:white;">📄</div>
         <span style="font-size:12px;">Файл</span>
       </div>
-      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="toast('Геопозиция отправлена'); closeModal();">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;" onclick="sendGeolocation('${threadId}'); closeModal();">
         <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#10B981,#34D399); display:flex; align-items:center; justify-content:center; font-size:24px; color:white;">📍</div>
         <span style="font-size:12px;">Геопозиция</span>
       </div>
@@ -828,22 +838,98 @@ function showAttachMenu(threadId) {
     </div>`;
   showModal(html, '<div class="row"><h3 style="margin:0;font-size:16px">Прикрепить</h3></div>');
 }
-function openCamera(type) {
+
+/* РЕАЛЬНАЯ ОТПРАВКА СЖАТЫХ ФОТО ЧЕРЕЗ FIRESTORE */
+function openCamera(type, threadId) {
   closeModal();
   const input = document.createElement('input');
   input.type = 'file';
-  if (type === 'photo') { input.accept = 'image/*'; input.capture = 'environment'; }
-  else if (type === 'video') { input.accept = 'video/*'; input.capture = 'environment'; }
-  else if (type === 'file') { input.accept = '*/*'; }
-  else { input.accept = 'image/*,video/*'; }
+  input.accept = type === 'file' ? '*/*' : 'image/*';
+  if (type === 'photo') input.capture = 'environment';
   
   input.onchange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    toast('Файл успешно выбран: ' + file.name);
+
+    if (type === 'file') {
+      toast('Файл выбран: ' + file.name);
+      return;
+    }
+
+    toast('Сжатие и отправка фото...');
+    compressAndSendImage(file, threadId);
   };
   input.click();
 }
+
+function compressAndSendImage(file, threadId) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = async function() {
+      const canvas = document.createElement('canvas');
+      const MAX_WIDTH = 800;
+      const MAX_HEIGHT = 800;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+      } else {
+        if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Получаем сжатый Base64 (качество 0.7)
+      const base64String = canvas.toDataURL('image/jpeg', 0.7);
+
+      try {
+        await addDoc(collection(db, 'threads', threadId, 'messages'), {
+          userId: currentUser.uid,
+          type: 'image',
+          data: base64String,
+          ts: Date.now()
+        });
+        toast('Фото отправлено!');
+      } catch (err) {
+        toast('Ошибка отправки (файл слишком большой)');
+        console.error(err);
+      }
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+/* РЕАЛЬНАЯ ГЕОПОЗИЦИЯ ЧЕРЕЗ БРАУЗЕР */
+function sendGeolocation(threadId) {
+  if (!navigator.geolocation) {
+    toast('Геолокация не поддерживается вашим браузером');
+    return;
+  }
+  toast('Определяем координаты...');
+  navigator.geolocation.getCurrentPosition(async (position) => {
+    const lat = position.coords.latitude;
+    const lon = position.coords.longitude;
+    const mapLink = `https://yandex.ru/maps/?pt=${lon},${lat}&z=16&l=map`;
+    const text = `📍 Моя геопозиция:\n${mapLink}`;
+    
+    await addDoc(collection(db, 'threads', threadId, 'messages'), {
+      userId: currentUser.uid,
+      type: 'text',
+      text: text,
+      ts: Date.now()
+    });
+    toast('Геопозиция отправлена!');
+  }, (error) => {
+    toast('Не удалось получить координаты');
+  }, { enableHighAccuracy: true });
+}
+
 async function sendTextMessage(threadId){
   const input = document.getElementById('chatInput');
   if (!input) return;
@@ -852,6 +938,7 @@ async function sendTextMessage(threadId){
   input.value = '';
   await addDoc(collection(db,'threads',threadId,'messages'), { userId: currentUser.uid, type:'text', text, ts: Date.now() });
 }
+
 const STICKERS = ['😂','😍','🔥','👍','👎','😎','🤣','😭','🤔','🥶','😱','🤝','💪','🏒','🥅','🏆','⚡','❄️','🎉','🤯','😴','🙈','💯','🤡','👀','🚀','🍕','🍺','🎯','💥','🤷','😤','😡','😇','🫡','🫠','🤪','🥳','😏','🤩','👋','✌️','🤙','🫶','❤️','🧡','💙'];
 function showStickerPanel(threadId){
   const html = '<div class="sticker-panel">' + STICKERS.map(s => '<button data-emoji="'+s+'">'+s+'</button>').join('') + '</div>';
@@ -869,19 +956,15 @@ function showGallery() {
   const mockPhotos = [
     { id: '1', url: 'https://picsum.photos/id/1015/400/400', type: 'image', date: 'Ноябрь 2026' },
     { id: '2', url: 'https://picsum.photos/id/1016/400/400', type: 'image', date: 'Ноябрь 2026' },
-    { id: '3', url: 'https://picsum.photos/id/1018/400/400', type: 'video', duration: '1:12', date: 'Ноябрь 2026' },
-    { id: '4', url: 'https://picsum.photos/id/1020/400/400', type: 'image', date: 'Октябрь 2026' },
-    { id: '5', url: 'https://picsum.photos/id/1021/400/400', type: 'video', duration: '0:15', date: 'Октябрь 2026' }
+    { id: '3', url: 'https://picsum.photos/id/1018/400/400', type: 'video', duration: '1:12', date: 'Ноябрь 2026' }
   ];
   let html = '<div style="display:flex; background:var(--fill); border-radius:20px; padding:4px; margin-bottom:16px;">' +
     '<button class="btn btn-primary" style="flex:1; padding:8px; border-radius:16px; font-size:13px;">Медиа</button>' +
     '<button class="btn btn-ghost" style="flex:1; padding:8px; border-radius:16px; font-size:13px; color:var(--text-2);" onclick="toast(\'Музыка\')">Музыка</button>' +
-    '<button class="btn btn-ghost" style="flex:1; padding:8px; border-radius:16px; font-size:13px; color:var(--text-2);" onclick="toast(\'Голосовые\')">Голосовые</button>' +
-    '<button class="btn btn-ghost" style="flex:1; padding:8px; border-radius:16px; font-size:13px; color:var(--text-2);" onclick="toast(\'Ссылки\')">Ссылки</button>' +
   '</div>';
   
   html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">' +
-    '<div style="font-weight:700; font-size:14px;">📸 Все фото и видео</div>' +
+    '<div style="font-weight:700; font-size:14px;">📸 Фото и видео чата</div>' +
     (state.gallerySelectMode ? '<button class="btn btn-ghost" style="padding:4px 8px; font-size:13px;" onclick="toggleGallerySelectMode()">Отмена</button>' : '<button class="btn btn-ghost" style="padding:4px 8px; font-size:13px;" onclick="toggleGallerySelectMode()">Выбрать</button>') +
   '</div>';
   
@@ -890,9 +973,6 @@ function showGallery() {
     const isSelected = state.gallerySelected.includes(p.id);
     html += '<div style="position:relative; aspect-ratio: 1; background:var(--fill); cursor:pointer;" onclick="' + (state.gallerySelectMode ? 'toggleGalleryItem(\'' + p.id + '\')' : 'toast(\'Просмотр файла\')') + '">' +
       '<img src="' + p.url + '" style="width:100%; height:100%; object-fit:cover; opacity:' + (state.gallerySelectMode && !isSelected ? '0.6' : '1') + ';">';
-    if (p.type === 'video') {
-      html += '<div style="position:absolute; bottom:4px; right:6px; background:rgba(0,0,0,0.6); color:white; padding:2px 6px; border-radius:8px; font-size:11px;">▶ ' + p.duration + '</div>';
-    }
     if (state.gallerySelectMode) {
       html += '<div style="position:absolute; top:6px; right:6px; width:22px; height:22px; border-radius:50%; border:2px solid white; background:' + (isSelected ? 'var(--pt-blue)' : 'rgba(0,0,0,0.3)') + '; display:flex; align-items:center; justify-content:center; color:white; font-size:12px;">' + (isSelected ? '✓' : '') + '</div>';
     }
@@ -905,7 +985,7 @@ function showGallery() {
       '<button class="btn btn-primary" style="width:100%;" onclick="downloadSelectedFiles()">⬇️ Скачать выбранные (' + state.gallerySelected.length + ')</button>' +
     '</div>';
   }
-  showModal(html, '<div class="row"><h3 style="margin:0;font-size:18px">Профиль чата</h3></div>');
+  showModal(html, '<div class="row"><h3 style="margin:0;font-size:18px">Медиатека</h3></div>');
 }
 function toggleGallerySelectMode() { state.gallerySelectMode = !state.gallerySelectMode; state.gallerySelected = []; showGallery(); }
 function toggleGalleryItem(id) {
@@ -1165,6 +1245,7 @@ window.removeUser = removeUser; window.showAddPlayer = showAddPlayer; window.add
 window.editMyProfile = editMyProfile; window.saveMyProfile = saveMyProfile; window.showRegisterModal = showRegisterModal;
 window.showPrivacyPolicy = showPrivacyPolicy; window.showResetConfirm = showResetConfirm; window.confirmReset = confirmReset;
 window.logout = logout; window.doLogin = doLogin; window.closeModal = closeModal;
+window.sendGeolocation = sendGeolocation;
 
 function setTab(tab){ 
   if (state.unsub._msgs) { state.unsub._msgs(); state.unsub._msgs = null; } 
